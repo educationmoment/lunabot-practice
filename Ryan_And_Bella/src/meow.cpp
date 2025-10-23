@@ -13,6 +13,13 @@ Class ControllerNode : public rclcpp::Node
       RCLCPP_INFO(this.get_logger(), "configuring  motor controllers")
 
       leftMotor.SetIdleMode(IdleMode::kBrake);
+      rightMotor.SetIdleMode(IdleMode::kBrake);
+      leftMotor.SetMotorType(MotorType::kBrushless);
+      rightMotor.SetMotorType(MotorType::kBrushless);
+
+      // finish configuring 
+      // leftMotor.BurnFlash();
+      // rightMotor.BurnFlash();
   
     
 
