@@ -4,6 +4,35 @@ enum CAN_IDs
   RIGHT_MOTOR = 2
 };
 
+namespace Gp
+{
+  enum Buttons
+  {
+    _A = 0,             // Excavation Autonomy
+    _B = 1,             // Stop Automation
+    _X = 2,             // Excavation Reset
+    _Y = 3,             // Deposit Autonomy
+    _LEFT_BUMPER = 4,   // Alternate between control modes
+    _RIGHT_BUMPER = 5,  // Vibration Toggle
+    _LEFT_TRIGGER = 6,  // Safety Trigger
+    _RIGHT_TRIGGER = 7, // Safety Trigger
+    _WINDOW_KEY = 8,    // Button 8 /** I do not know what else to call this key */
+    _D_PAD_UP = 12,     // Lift Actuator UP
+    _D_PAD_DOWN = 13,   // Lift Actuator DOWN
+    _D_PAD_LEFT = 14,   // Tilt Actuator Up   /** CHECK THESE */
+    _D_PAD_RIGHT = 15,  // Tilt Actuator Down /** CHECK THESE */
+    _X_BOX_KEY = 16
+  };
+
+  enum Axes
+  {
+    _LEFT_HORIZONTAL_STICK = 0,
+    _LEFT_VERTICAL_STICK = 1,
+    _RIGHT_HORIZONTAL_STICK = 2,
+    _RIGHT_VERTICAL_STICK = 3,
+  };
+}
+
 
 Class ControllerNode : public rclcpp::Node
 {
