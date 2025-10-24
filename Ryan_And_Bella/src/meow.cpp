@@ -1,3 +1,8 @@
+enum CAN_IDs
+{
+  LEFT_MOTOR = 1,
+  RIGHT_MOTOR = 2
+};
 
 
 Class ControllerNode : public rclcpp::Node
