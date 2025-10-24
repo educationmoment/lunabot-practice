@@ -1,3 +1,9 @@
+#include "SparkMax.hpp"
+#include <cmath>
+#include <string>
+#include <cstdlib>
+#include <algorithm>
+
 enum CAN_IDs
 {
   LEFT_MOTOR = 1,
