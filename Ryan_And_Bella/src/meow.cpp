@@ -39,7 +39,16 @@ Class ControllerNode : public rclcpp::Node
 
       leftMotor.SetDutyCycle(left_drive);
       rightMotor.SetDutyCycle(right_drive);
+      leftMotor.HeartBeat();
+      rightMotor.HeartBeat();
     }  
+
+    void publish_heartbeat()
+    {
+      auto msg = std_msgs::msg::String();
+      msg.data = "Heartbeat";
+      heartbeatPub.publish(msg);
+    }
 
 }
 
