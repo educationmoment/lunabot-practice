@@ -54,7 +54,33 @@ Class ControllerNode : public rclcpp::Node
       // finish configuring 
       // leftMotor.BurnFlash();
       // rightMotor.BurnFlash();
+    }
 
+    // ros topics
+    // /joy
+    // /controller_node
+    {
+      joy_subscriber_ = this.create_subscription<general_msgs::msg::Joy>(
+        "/joy", 10,
+        std::bind::(&ControllerNode::joy_callback, this, std::placeHolders::_1);
+        RCLCP_INFO(this.get_logger(), "we got joy");
+      )
+    }
+
+    // request
+
+    {
+      void send_excavation_request()
+      {
+        if (!excavation_client_){
+          RCLCP_INFO(this.get_logger(), "can't find excavation")l
+          return;
+        }
+        auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
+        request.start_excavation = true;
+        RCLCP_INFO(this.get_logger(), "we got excavation");
+      }
+    }
     //drive train
     {
       float left_drive = 0.0
