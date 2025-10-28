@@ -1,1 +1,131 @@
-hi
+#include "SparkMax.hpp"
+#include <cmath>
+#include <string>
+#include <cstdlib>
+#include <algorithm>
+
+const float VELOCITY_MAX = 2500.0;  // rpm, after gearbox turns into 11.1 RPM
+
+enum CAN_IDs
+{
+  LEFT_MOTOR = 1,
+  RIGHT_MOTOR = 2,
+};
+
+namespace Gp
+{
+  enum Buttons
+  {
+    _A = 0,             // Excavation Autonomy
+    _B = 1,             // Stop Automation
+    _X = 2,             // Excavation Reset
+    _Y = 3,             // Deposit Autonomy
+    _LEFT_BUMPER = 4,   // Alternate between control modes
+    _RIGHT_BUMPER = 5,  // Vibration Toggle
+    _LEFT_TRIGGER = 6,  // Safety Trigger
+    _RIGHT_TRIGGER = 7, // Safety Trigger
+    _WINDOW_KEY = 8,    // Button 8 /** I do not know what else to call this key */
+    _D_PAD_UP = 12,     // Lift Actuator UP
+    _D_PAD_DOWN = 13,   // Lift Actuator DOWN
+    _D_PAD_LEFT = 14,   // Tilt Actuator Up   /** CHECK THESE */
+    _D_PAD_RIGHT = 15,  // Tilt Actuator Down /** CHECK THESE */
+    _X_BOX_KEY = 16
+  };
+
+  enum Axes
+  {
+    _LEFT_HORIZONTAL_STICK = 0,
+    _LEFT_VERTICAL_STICK = 1,
+    _RIGHT_HORIZONTAL_STICK = 2,
+    _RIGHT_VERTICAL_STICK = 3,
+  };
+}
+
+class ControllerNode : public rclcpp::Node
+{
+  public:
+
+  ControllerNode(const std::string &can_interface)
+  : Node("controller_node"),
+    leftMotor(can_interface, LEFT_MOTOR),
+    rightMotor(can_interface, RIGHT_MOTOR)
+    {
+      RCLCPP_INFO(this.get_logger(), "beginnign node...")
+      RCLCPP_INFO(this.get_logger(), "configuring motor controllers..")
+
+      leftMotor.SetIdleMode(IdleMode::kBrake);
+      rightMotor.SetIdleMode(IdleMode::kBrake);
+      leftMotor.SetMotorType(MotorType::kBrushless);
+      rightMotor.SetMotorType(MotorType::kBrushless);
+      leftMotor.Burnflash();
+      rightMotor.BurnFlash();
+
+
+
+    }
+
+    {
+      joy_subscriber_ = this.create_subscription<general_msgs::msg::Joy>(
+        "/joy", 10,
+        std::bind::(&ControllerNode::joy_callback, this, std::placeholders::_1));
+        RCLCP_INFO(this.get_logger(), "we got joy!");
+
+      
+    }
+    // request 
+
+    {
+      void send_excavation_request()
+      {
+        if (!excavation_client_)
+          {
+            RCLCP_INFO(this.get_logger(), "cant find excvation");
+            return;
+          }
+        auto request = std::make_shared<controller_pkg::srv::ExcavationRequest::Request>();
+        request.start_excavation = true;
+        RCLCP_INFO(this.get_logger(), "we got excavation");
+
+      }
+    }
+    // drivetrain
+
+    private:
+        SparkMax leftMotor;
+        SparkMax rightMotor;
+
+    {
+      
+      float left_joystick = -joy_msg.axes[Gp::Axes::_LEFT_VERTICAL_STICK];
+      float right_joystick = -joy_msg.axes[Gp::Axes::_RIGHT_VERTICAL_STICK];
+
+      //Left Motor
+      float left_processed =0.0f;
+      if(left_joystick > 1.0f) left_processed =1.0f;
+      else if (left_joystick <-1.0f) left_processed =-1.0f;
+      else left_processed = left_joystick;
+      left_processed = computeStepOutput(left_processed);
+
+      //Right Motor
+      float right_processed =0.0f;
+      if(right_joystick > 1.0f) right_processed =1.0f;
+      else if (right_joystick <-1.0f) right_processed =-1.0f;
+      else right_processed = right_joystick;
+      right_processed = computeStepOutput(right_processed);
+
+      leftMotor.SetDutyCycle(left_processed);
+      rightMotor.SetDutyCycle(right_processed);
+
+      leftMotor.HeartBeat();
+      rightMotor.HeartBeat();
+
+
+    }
+    
+    //Logic is the same where if value is >1.0 -> set to 1.0 
+    //else if value <-1.0 -> set to -1.0
+    //else you keep the original value ( cant tell if its basically between -1.0 and 1.0)
+
+
+}
+
