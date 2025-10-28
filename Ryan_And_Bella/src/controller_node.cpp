@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <algorithm>
 
+const float VELOCITY_MAX = 2500.0;
+
 enum CAN_IDs
 {
   LEFT_MOTOR = 1,
@@ -40,36 +42,38 @@ namespace Gp
 }
 
 
-Class ControllerNode : public rclcpp::Node
+class ControllerNode : public rclcpp::Node
 {
-  public:
+public:
+
+  SparkMax leftMotor;
+  SparkMax rightMotor;
 
   ControllerNode(const std::string &can_interface)
   : Node("controller_node"),
     leftMotor(can_interface, LEFT_MOTOR),
     rightMotor(can_interface, RIGHT_MOTOR)
     {
-      RCLCPP_INFO(this.get_logger(), "beginning node")
-      RCLCPP_INFO(this.get_logger(), "configuring  motor controllers")
+      RCLCPP_INFO(this->get_logger(), "beginning node");
+      RCLCPP_INFO(this->get_logger(), "configuring  motor controllers");
 
       leftMotor.SetIdleMode(IdleMode::kBrake);
       rightMotor.SetIdleMode(IdleMode::kBrake);
       leftMotor.SetMotorType(MotorType::kBrushless);
       rightMotor.SetMotorType(MotorType::kBrushless);
-
-      // finish configuring 
-      // leftMotor.BurnFlash();
-      // rightMotor.BurnFlash();
+      
+      leftMotor.BurnFlash();
+      rightMotor.BurnFlash();
     }
 
     // ros topics
     // /joy
     // /controller_node
     {
-      joy_subscriber_ = this.create_subscription<general_msgs::msg::Joy>(
+      joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
         "/joy", 10,
-        std::bind::(&ControllerNode::joy_callback, this, std::placeHolders::_1);
-        RCLCP_INFO(this.get_logger(), "we got joy");
+        std::bind::(&ControllerNode::joy_callback, this, std::placeholders::_1);
+        RCLCP_INFO(this->get_logger(), "we got joy");
       )
     }
 
@@ -79,12 +83,12 @@ Class ControllerNode : public rclcpp::Node
       void send_excavation_request()
       {
         if (!excavation_client_){
-          RCLCP_INFO(this.get_logger(), "can't find excavation")l
+          RCLCP_INFO(this->get_logger(), "can't find excavation");
           return;
         }
         auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
         request.start_excavation = true;
-        RCLCP_INFO(this.get_logger(), "we got excavation");
+        RCLCP_INFO(this->get_logger(), "we got excavation");
       }
     }
     //drive train
