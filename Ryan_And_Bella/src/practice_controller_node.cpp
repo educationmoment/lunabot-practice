@@ -67,10 +67,17 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       rightMotor.SetIdleMode(IdleMode::kBrake);
       // configure other stuff
 
-      
+      // listen to joystick input by subscribing to joystick
+      joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
+        "/joy", 10,
+        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1)
+      );
+      RCLCPP_INFO(this->get_logger(), "Joystick subscriber initialized.");
+
+      // send those commands to two motor controllers
+      excavation_client_ = this->create_client<controller_pkg::srv::ExcavationRequest>("excavation_service");
+
+      RCLCPP_INFO(this->get_logger(), "ControllerNode fully initialized.");
     }
 
-    // listen to joystick input
-    // translate that input into commands for the robot’s motors
-    // send those commands to two motor controllers
 };
