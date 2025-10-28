@@ -63,4 +63,216 @@ ControllerNode(const std::string &can_interface)
         rightLift(can_interface, RIGHT_LIFT),
         tilt(can_interface, TILT),
         vibrator(can_interface, VIBRATOR),
-        vibrator_active()
+        vibrator_active(false),
+        prev_vibrator_button_(false),
+        alternate_mode_active_(false),
+        prev_alternate_button_(false)
+  {
+    RCLCPP_INFO(this->get_logger(), "Begin Initializing Node");
+
+    RCLCPP_INFO(this->get_logger(), "Initializing Motor Controllers");
+
+    leftMotor.SetIdleMode(IdleMode::kBrake);
+    rightMotor.SetIdleMode(IdleMode::kBrake);
+    leftMotor.SetMotorType(MotorType::kBrushless);
+    rightMotor.SetMotorType(MotorType::kBrushless);
+    leftMotor.SetSensorType(SensorType::kHallSensor);
+    rightMotor.SetSensorType(SensorType::kHallSensor);
+    // Initializes the settings for the drivetrain motors
+
+    leftLift.SetIdleMode(IdleMode::kBrake);
+    rightLift.SetIdleMode(IdleMode::kBrake);
+    leftLift.SetMotorType(MotorType::kBrushed);
+    rightLift.SetMotorType(MotorType::kBrushed);
+    leftLift.SetSensorType(SensorType::kEncoder);
+    rightLift.SetSensorType(SensorType::kEncoder);
+    // Initializes the settings for the lift actuators
+
+    tilt.SetIdleMode(IdleMode::kBrake);
+    tilt.SetMotorType(MotorType::kBrushed);
+    tilt.SetSensorType(SensorType::kEncoder);
+    // Initializes the settings for the tilt actuator
+
+    vibrator.SetIdleMode(IdleMode::kBrake);
+    vibrator.SetMotorType(MotorType::kBrushed);
+    vibrator.SetSensorType(SensorType::kEncoder);
+    // Initializes the settings fro the vibrator
+
+    leftMotor.SetInverted(false);
+    rightMotor.SetInverted(true);
+    leftLift.SetInverted(true);
+    rightLift.SetInverted(true);
+    tilt.SetInverted(true);
+    vibrator.SetInverted(true);
+    // Initializes the inverting status
+
+    leftMotor.SetP(0, 0.0002f);
+    leftMotor.SetI(0, 0.0f);
+    leftMotor.SetD(0, 0.0f);
+    leftMotor.SetF(0, 0.00021f);
+    // PID settings for left motor
+
+    rightMotor.SetP(0, 0.0002f);
+    rightMotor.SetI(0, 0.0f);
+    rightMotor.SetD(0, 0.0f);
+    rightMotor.SetF(0, 0.00021f);
+    // PID settings for right motor
+
+    leftLift.SetP(0, 1.51f);
+    leftLift.SetI(0, 0.0f);
+    leftLift.SetD(0, 0.0f);
+    leftLift.SetF(0, 0.00021f);
+    // PID settings for left lift
+
+    rightLift.SetP(0, 1.51f);
+    rightLift.SetI(0, 0.0f);
+    rightLift.SetD(0, 0.0f);
+    rightLift.SetF(0, 0.00021f);
+    // PID settings for right lift
+
+    // PID settings for tilt
+    tilt.SetP(0, 1.51f);
+    tilt.SetI(0, 0.0f);
+    tilt.SetD(0, 0.0f);
+    tilt.SetF(0, 0.00021f);
+    // PID settings for tilt
+
+    leftMotor.BurnFlash();
+    rightMotor.BurnFlash();
+    leftLift.BurnFlash();
+    rightLift.BurnFlash();
+    tilt.BurnFlash();
+    vibrator.BurnFlash();
+    RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
+
+    // ---ROS SUBSCRIPTIONS--- //
+    RCLCPP_INFO(this->get_logger(), "Initializing Joy Subscription");
+    joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
+        "/joy", 10,
+        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
+    RCLCPP_INFO(this->get_logger(), "Joy Subscription Initialized");
+
+    health_subscriber_ = this->create_subscription<interfaces_pkg::msg::MotorHealth>(
+        "/health_topic", 10,
+        std::bind(&ControllerNode::position_callback, this, std::placeholders::_1));
+
+    RCLCPP_INFO(this->get_logger(), "Initializing depositing, excavation, and travel client");
+    depositing_client_ = (this->create_client<interfaces_pkg::srv::DepositingRequest>("depositing_service"));
+    excavation_client_ = (this->create_client<interfaces_pkg::srv::ExcavationRequest>("excavation_service"));
+    RCLCPP_INFO(this->get_logger(), "Excavation, depositing clients initialized");
+
+    RCLCPP_INFO(this->get_logger(), "Initializing Heartbeat Publisher");
+    heartbeatPub = this->create_publisher<std_msgs::msg::String>("/heartbeat", 10);
+    RCLCPP_INFO(this->get_logger(), "Heartbeat Publisher Initialized");
+
+    RCLCPP_INFO(this->get_logger(), "Initializing Timer");
+    timer = this->create_wall_timer(
+        std::chrono::milliseconds(1000),
+        std::bind(&ControllerNode::publish_heartbeat, this));
+    RCLCPP_INFO(this->get_logger(), "Timer Initialized");
+
+    RCLCPP_INFO(this->get_logger(), "Node Initialization Complete");
+  }
+
+private:
+  // Direct object members.
+  SparkMax leftMotor;
+  SparkMax rightMotor;
+  SparkMax leftLift;
+  SparkMax rightLift;
+  SparkMax tilt;
+  SparkMax vibrator;
+
+  rclcpp::Client<interfaces_pkg::srv::DepositingRequest>::SharedPtr depositing_client_;
+  rclcpp::Client<interfaces_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
+  rclcpp::Subscription<interfaces_pkg::msg::MotorHealth>::SharedPtr health_subscriber_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr heartbeatPub;
+  rclcpp::TimerBase::SharedPtr timer;
+
+  // Autonomy flag
+  bool is_autonomy_active_ = false;
+
+  // Vibrator toggle
+  bool vibrator_active_;
+  bool prev_vibrator_button_;
+
+  // Alternate control mode toggle variables.
+  bool alternate_mode_active_ = false;
+  bool prev_alternate_button_ = false;
+
+  float left_lift_position = 0.0f;
+  float right_lift_position = 0.0f;
+
+  // Helper for stepped output, in velocity control mode it is multiplied by VELOCITY_MAX
+  /**
+   * @brief Output must be bound within the range [-1.0,1.0].
+   *        Returned value will be an integer multiple of 0.25.
+   * @param value
+   * @returns Step output of value.
+   */
+  float computeStepOutput(float value)
+  {
+    float absVal = std::fabs(value);
+    if (absVal < 0.25f)
+      return 0.0f;
+
+    else if (absVal < 0.5f)
+      return (value > 0 ? 0.25f : -0.25f);
+
+    else if (absVal < 0.75f)
+      return (value > 0 ? 0.5f : -0.5f);
+
+    else if (absVal < 1.0f)
+      return (value > 0 ? 0.75f : -0.75f);
+
+    return (value > 0 ? 1.0f : -1.0f);
+  }
+
+  /**
+   * @brief Sends request to depositing node and manages response
+   * @param None
+   * @returns None
+   */
+  void send_deposit_request()
+  {
+    if (!depositing_client_ || !depositing_client_->wait_for_service(std::chrono::seconds(1)))
+    {
+      RCLCPP_ERROR(this->get_logger(), "Service not available");
+      return;
+    }
+    auto request = std::make_shared<interfaces_pkg::srv::DepositingRequest::Request>();
+    request->start_depositing = true;
+    depositing_client_->async_send_request(request, [this](rclcpp::Client<interfaces_pkg::srv::DepositingRequest>::SharedFuture future)
+                                           {
+      auto response = future.get();
+      if (response->depositing_successful) {
+        RCLCPP_INFO(this->get_logger(), "Depositing successful");
+      } else {
+        RCLCPP_WARN(this->get_logger(), "Depositing failed");
+      } });
+  })
+
+//trying to work on new logic for excavation 
+void joyCallback(const sensor_msg::msg::Joy::SharedPtr joy){
+    bool vibrator_button = (joy->buttons[5] > 0);
+    if(vibrator_button && !prev_vibrator_button) //if you are currently pressing the button, then set the activity to active
+    {
+        vibrator_active = true;
+        RCLCPP_(get_logger(), "Vibrator toggled %s", vibrator_active_ ? "ON" : "OFF");
+    }
+    prev_vibrator_button = vibrator_button;
+    
+    float vibrator_duty = vibrator_active_ ? VIBRATOR_OUTPUT : 0.0f;
+    setVibratorDuty(vibrator_duty);
+
+    //Excaation reset (x button)
+    if(joy->buttons[2] > 0) //x button
+    {
+        resetExcavation();
+        return -1;
+    }
+
+    //Tilt actuator (D-pad left/right)
+    float tilt_duty = 0.0f;
+    if(joy->axes)
