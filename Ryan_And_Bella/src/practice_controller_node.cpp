@@ -46,6 +46,9 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
   private:
     SparkMax leftMotor;   // controls the left motor
     SparkMax rightMotor;  // controls the right motor
+
+    rclcpp::Subscription<general_msgs::msg::Joy>::SharedPtr joy_subscriber_;
+    rclcpp::Client<controller_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;
   public:
 
     // constructor
@@ -70,13 +73,11 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       // listen to joystick input by subscribing to joystick
       joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
         "/joy", 10,
-        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1)
-      );
+        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
       RCLCPP_INFO(this->get_logger(), "Joystick subscriber initialized.");
 
       // send those commands to motor controllers
       excavation_client_ = this->create_client<controller_pkg::srv::ExcavationRequest>("excavation_service");
-
       RCLCPP_INFO(this->get_logger(), "ControllerNode fully initialized.");
     }
 
