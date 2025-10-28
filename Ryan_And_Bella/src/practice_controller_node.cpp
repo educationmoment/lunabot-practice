@@ -54,6 +54,20 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       // Initialize left and right motors
       leftMotor = SparkMax(can_interface, LEFT_MOTOR);
       rightMotor = SparkMax(can_interface, RIGHT_MOTOR);
+
+      // log start of new node creation
+      RCLCPP_INFO(this->get_logger(), "Beginning node...");
+      RCLCPP_INFO(this->get_logger(), "Configuring motor controllers...");
+
+      // set the motor types
+      leftMotor.SetMotorType(MotorType::kBrushless);
+      rightMotor.SetMotorType(MotorType::kBrushless);
+      // make the motors stay still
+      leftMotor.SetIdleMode(IdleMode::kBrake);
+      rightMotor.SetIdleMode(IdleMode::kBrake);
+      // configure other stuff
+
+      
     }
 
     // listen to joystick input
