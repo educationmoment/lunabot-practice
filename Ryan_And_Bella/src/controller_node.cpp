@@ -44,9 +44,12 @@ namespace Gp
 
 class ControllerNode : public rclcpp::Node
 {
-public:
+
+private:
   SparkMax leftMotor;
   SparkMax rightMotor;
+
+public:
 
   ControllerNode(const std::string &can_interface)
   : Node("controller_node"),
@@ -60,22 +63,23 @@ public:
       rightMotor.SetIdleMode(IdleMode::kBrake);
       leftMotor.SetMotorType(MotorType::kBrushless);
       rightMotor.SetMotorType(MotorType::kBrushless);
-      
-      leftMotor.BurnFlash();
-      rightMotor.BurnFlash();
+
+      // might not have to do if its already done
+      // leftMotor.BurnFlash();
+      // rightMotor.BurnFlash();
     }
 
     // ros topics
     // /joy
     // /controller_node
-    {
-      joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
-        "/joy", 10,
-        std::bind::(&ControllerNode::joy_callback, this, std::placeholders::_1);
-        RCLCP_INFO(this->get_logger(), "we got joy");
-      )
-    }
+    
+    joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
+      "/joy", 10,
+      std::bind::(&ControllerNode::joy_callback, this, std::placeholders::_1),
+      RCLCP_INFO(this->get_logger(), "we got joy");
+    )
 
+  
     // request
 
     
@@ -90,12 +94,12 @@ public:
       RCLCP_INFO(this->get_logger(), "we got excavation");
     }
     //drive train
-    void handle_drive_train()
+    void handle_drive_train(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
     {
-      float left_drive = 0.0
-      float right_drive = 0.0
-      float left_drive_raw = 0.0
-      float right_drive_raw = 0.0
+      float left_drive = 0.0;
+      float right_drive = 0.0;
+      float left_drive_raw = 0.0;
+      float right_drive_raw = 0.0;
 
       float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
       float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
