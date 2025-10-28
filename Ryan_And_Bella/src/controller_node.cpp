@@ -45,7 +45,6 @@ namespace Gp
 class ControllerNode : public rclcpp::Node
 {
 public:
-
   SparkMax leftMotor;
   SparkMax rightMotor;
 
@@ -54,8 +53,8 @@ public:
     leftMotor(can_interface, LEFT_MOTOR),
     rightMotor(can_interface, RIGHT_MOTOR)
     {
-      RCLCPP_INFO(this->get_logger(), "beginning node");
-      RCLCPP_INFO(this->get_logger(), "configuring  motor controllers");
+      RCLCP_INFO(this->get_logger(), "beginning node");
+      RCLCP_INFO(this->get_logger(), "configuring  motor controllers");
 
       leftMotor.SetIdleMode(IdleMode::kBrake);
       rightMotor.SetIdleMode(IdleMode::kBrake);
@@ -79,19 +78,19 @@ public:
 
     // request
 
+    
+    void send_excavation_request()
     {
-      void send_excavation_request()
-      {
-        if (!excavation_client_){
-          RCLCP_INFO(this->get_logger(), "can't find excavation");
-          return;
-        }
-        auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
-        request.start_excavation = true;
-        RCLCP_INFO(this->get_logger(), "we got excavation");
+      if (!excavation_client_){
+        RCLCP_INFO(this->get_logger(), "can't find excavation");
+        return;
       }
+      auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
+      request.start_excavation = true;
+      RCLCP_INFO(this->get_logger(), "we got excavation");
     }
     //drive train
+    void handle_drive_train()
     {
       float left_drive = 0.0
       float right_drive = 0.0
@@ -117,10 +116,17 @@ public:
     {
       auto msg = std_msgs::msg::String();
       msg.data = "Heartbeat";
-      heartbeatPub.publish(msg);
+      heartbeatPub->publish(msg);
     }
 
 }
 
 int main(int argc, char **argv){
+  rclcpp::init(argc, argv);
+  std::string can_interface = "can0";
+  auto temp_node = std::make_shared<ControllerNode>(can_interface);
+  RCLCP_INFO(this->get_logger(), "started controller node");
+  rclcpp::spin(temp_node);
+  rclcpp::shutdown();
+  return 0;
 }
