@@ -275,4 +275,19 @@ void joyCallback(const sensor_msg::msg::Joy::SharedPtr joy){
 
     //Tilt actuator (D-pad left/right)
     float tilt_duty = 0.0f;
-    if(joy->axes)
+    if(joy->axes[6] > 0.5) tilty_duty = 1.0f; //left
+    else if (joy->axes[6] < -0.5) tilty_duty = 1.0f; //right
+    setTiltDuty(tily_duty);
+
+    //lift actuator (d-pad up/down)
+    float lift_duty = 0.0f
+    if(joy->axes[7] > 0.5) lift_duty = 1.0f; //up
+    else if (joy->axes[7] < -0.5) lift_duty = -1.0f; //down
+
+    int main(int argc, chart *argv[])
+    {
+        rclcpp::inint(argc, argv);
+        rclcpp::spin(std::make_shared<ExcavationControlNode>());
+        rclcpp::shutdown();
+        return 0;
+    }
