@@ -1,0 +1,62 @@
+#include "SparkMax.hpp"
+#include <cmath>
+#include <string>
+#include <cstdlib>
+#include <algorithm>
+
+const float VELOCITY_MAX = 2500.0;  // rpm, after gearbox turns into 11.1 RPM
+
+enum CAN_IDs  // assign ID to each motor
+{
+  LEFT_MOTOR = 1,
+  RIGHT_MOTOR = 2,
+};
+
+namespace Controller // corresponding numbers are indicies
+{
+  enum Buttons
+  {
+    _A = 0,             // Excavation Autonomy
+    _B = 1,             // Stop Automation
+    _X = 2,             // Excavation Reset
+    _Y = 3,             // Deposit Autonomy
+    _LEFT_BUMPER = 4,   // Alternate between control modes
+    _RIGHT_BUMPER = 5,  // Vibration Toggle
+    _LEFT_TRIGGER = 6,  // Safety Trigger
+    _RIGHT_TRIGGER = 7, // Safety Trigger
+    _WINDOW_KEY = 8,    // Button 8 /** I do not know what else to call this key */
+    _D_PAD_UP = 12,     // Lift Actuator UP
+    _D_PAD_DOWN = 13,   // Lift Actuator DOWN
+    _D_PAD_LEFT = 14,   // Tilt Actuator Up   /** CHECK THESE */
+    _D_PAD_RIGHT = 15,  // Tilt Actuator Down /** CHECK THESE */
+    _X_BOX_KEY = 16
+  };
+
+  enum Axes
+  {
+    _LEFT_HORIZONTAL_STICK = 0,
+    _LEFT_VERTICAL_STICK = 1,
+    _RIGHT_HORIZONTAL_STICK = 2,
+    _RIGHT_VERTICAL_STICK = 3,
+  };
+}
+
+class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::Node (ROS node) features
+{
+  private:
+    SparkMax leftMotor;   // controls the left motor
+    SparkMax rightMotor;  // controls the right motor
+  public:
+
+    // constructor
+    ControllerNode(const std::string &can_interface) : Node("controller_node")  // initialize rclcpp::Node (the base ROS node) with the name "controller_node"
+    {
+      // Initialize left and right motors
+      leftMotor = SparkMax(can_interface, LEFT_MOTOR);
+      rightMotor = SparkMax(can_interface, RIGHT_MOTOR);
+    }
+
+    // listen to joystick input
+    // translate that input into commands for the robot’s motors
+    // send those commands to two motor controllers
+};
