@@ -76,8 +76,8 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
 
       // listen to joystick input by subscribing to joystick
       joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(       // joy_subscriber_ points to live ROS 2 subscription object 
-        "/joy", 10,
-        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
+        "/joy", 10,                                                              // 10 is the queue size. Node can hold up to 10 messags
+        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));  // call joy_callback function
       RCLCPP_INFO(this->get_logger(), "Joystick subscriber initialized.");
 
       // send those commands to motor controllers
