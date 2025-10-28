@@ -74,7 +74,7 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       );
       RCLCPP_INFO(this->get_logger(), "Joystick subscriber initialized.");
 
-      // send those commands to two motor controllers
+      // send those commands to motor controllers
       excavation_client_ = this->create_client<controller_pkg::srv::ExcavationRequest>("excavation_service");
 
       RCLCPP_INFO(this->get_logger(), "ControllerNode fully initialized.");
