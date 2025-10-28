@@ -47,8 +47,12 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
     SparkMax leftMotor;   // controls the left motor
     SparkMax rightMotor;  // controls the right motor
 
+    // joy_subscriber_ is of type rclcpp::Subscription<general_msgs::msg::Joy>::SharedPtr
+    // <general_msgs::msg::Joy> is the kind of message expected (messages of type Joy)
+    // this is basically a shared pointer to a subscription that receives Joy messages
     rclcpp::Subscription<general_msgs::msg::Joy>::SharedPtr joy_subscriber_;
-    rclcpp::Client<controller_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;
+
+    rclcpp::Client<controller_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;  // 
   public:
 
     // constructor
@@ -71,7 +75,7 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       // configure other stuff
 
       // listen to joystick input by subscribing to joystick
-      joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
+      joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(       // joy_subscriber_ points to live ROS 2 subscription object 
         "/joy", 10,
         std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
       RCLCPP_INFO(this->get_logger(), "Joystick subscriber initialized.");
