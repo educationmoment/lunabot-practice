@@ -79,9 +79,7 @@ public:
       RCLCP_INFO(this->get_logger(), "we got joy");
     )
 
-  
     // request
-
     
     void send_excavation_request()
     {
@@ -96,10 +94,10 @@ public:
     //drive train
     void handle_drive_train(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
     {
-      float left_drive = 0.0;
-      float right_drive = 0.0;
-      float left_drive_raw = 0.0;
-      float right_drive_raw = 0.0;
+      float left_drive = 0.0f;
+      float right_drive = 0.0f;
+      float left_drive_raw = 0.0f;
+      float right_drive_raw = 0.0f;
 
       float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
       float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
@@ -112,6 +110,7 @@ public:
 
       leftMotor.SetDutyCycle(left_drive);
       rightMotor.SetDutyCycle(right_drive);
+      
       leftMotor.HeartBeat();
       rightMotor.HeartBeat();
     }  
