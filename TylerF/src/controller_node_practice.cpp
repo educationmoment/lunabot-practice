@@ -7,6 +7,7 @@
 #include <sensor_msgs/msg/joy.hpp>
 
 //notes: caps are used for values that are constant/don't change
+//rclcpp is the ros library for cpp and how we are creating nodes and subscribers 
 
 //is double because it is a precise value
 //2500.0 is the max motor speed in rpm
@@ -27,7 +28,7 @@ enum CAN_IDs
     VIBRATOR = 6,
 };
 
-//this is giving us the controller input mapping so that we can indentify each button pressed on the controller
+//this is giving us the controller input mapping so that we can identify each button pressed on the controller
 //gp = gamepad input
 //we want to define a namespace so that the variables don't become confusing and are grouped accordingly
 namespace Gp
@@ -80,9 +81,9 @@ class ControllerNode : public rclcpp::Node
           vibrator_active(false)
         {
             //now we need to subscribe to joy so that we can recieve inputs from the contorller joystick
-            joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
+            joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
               "/joy", 10,
-              std::bind::(&ControllerNode::joy_callback, this, std::placeholders::_1)
+              std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1)
             );
             RCLCPP_INFO(this->get_logger(), "we got joy");
         }
@@ -114,6 +115,7 @@ private:
     float right_y = msg->axes[Gp::_RIGHT_VERTICAL_STICK]; // Right joystick controls right side
 
     //compute motor target velocities
+    //this is a double and not a float because doubles are more accurate with more digits of precision 
     double left_speed = left_y * VELOCITY_MAX;
     double right_speed = right_y * VELOCITY_MAX;
 
@@ -122,12 +124,12 @@ private:
     rightMotor.SetVelocity(right_speed);
 
     //vibrator toggle (using right bumper button)
-    //continuously checks if the right bumped is being pressed and if it is pressed it updates the variable and toggles the vibrator
+    //continuously checks if the right bumped is being pressed, and if it is pressed it updates the variable and toggles the vibrator
     if (msg->buttons[Gp::_RIGHT_BUMPER])
     {
       vibrator_active = !vibrator_active;
       vibrator.SetDutyCycle(vibrator_active ? VIBRATOR_OUTPUT : 0.0f);
-      RCLCPP_INFO(this->get_logger(), "🔄 Vibrator toggled %s", vibrator_active ? "ON" : "OFF");
+      RCLCPP_INFO(this->get_logger(), "Vibrator toggled %s", vibrator_active ? "ON" : "OFF");
     }
 
     //will continuously update in the terminal every second with the % of each motor and if the vibrator is on
@@ -143,7 +145,7 @@ int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
 
-  // Define the CAN interface name (matches your Linux CAN network device)
+
   std::string can_interface = "can0";
 
   // Create and spin the node
@@ -153,5 +155,6 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
+
 
 
