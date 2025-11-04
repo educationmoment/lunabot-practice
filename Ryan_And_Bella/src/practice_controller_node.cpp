@@ -53,6 +53,12 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
     rclcpp::Subscription<general_msgs::msg::Joy>::SharedPtr joy_subscriber_;
 
     rclcpp::Client<controller_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;  // 
+
+    float computeStepOutput(float input)
+    {
+      // do the thing
+      return input;
+    }
   public:
 
     // constructor
@@ -80,9 +86,54 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
         std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));  // call joy_callback function
       RCLCPP_INFO(this->get_logger(), "Joystick subscriber initialized.");
 
-      // send those commands to motor controllers
+      // initialize excavation
+      // creates a service client inside the current node with 'create_client'
+      // <controller_pkg::srv::ExcavationRequest> defines the kind of request and response (the structure) messages this service will use
+      // "excavation_service" is the name of the service
       excavation_client_ = this->create_client<controller_pkg::srv::ExcavationRequest>("excavation_service");
       RCLCPP_INFO(this->get_logger(), "ControllerNode fully initialized.");
     }
 
+    void joy_callback(const general_msgs::msg::Joy::SharedPtr joy_msg)
+    {
+      float left_drive = 0.0f;
+      float right_drive = 0.0f;
+      float left_drive_raw = 0.0f;
+      float right_drive_raw = 0.0f;
+
+      float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
+      float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
+
+      left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
+      right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
+
+      left_drive = computeStepOutput(left_drive_raw);
+      right_drive = computeStepOutput(right_drive_raw);
+
+      leftMotor.SetDutyCycle(left_drive);
+      rightMotor.SetDutyCycle(right_drive);
+      
+      leftMotor.HeartBeat();
+      rightMotor.HeartBeat();
+    }
+
+    // send excavation request
+    void send_excavation_request()
+    {
+      auto request = std::make_shared<controller_pkg::srv::ExcavationRequest::Request>();
+      request.start_excavation = true;
+      RCLCP_INFO(this->get_logger(), "sending excavation request...");
+
+      excavation_client_->async_send_request(request);
+    }
 };
+
+int main(int argc, char **argv){
+  rclcpp::init(argc, argv);
+  std::string can_interface = "can0";
+  auto temp_node = std::make_shared<ControllerNode>(can_interface);
+  RCLCP_INFO(this->get_logger(), "started controller node");
+  rclcpp::spin(temp_node);
+  rclcpp::shutdown();
+  return 0;
+}
