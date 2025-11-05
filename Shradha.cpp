@@ -286,7 +286,10 @@ void joyCallback(const sensor_msg::msg::Joy::SharedPtr joy){
 
     int main(int argc, chart *argv[])
     {
+        
         rclcpp::inint(argc, argv);
+        std::string can_interface = "can0";
+        auto temp_node = rclcpp::Node::make_shared("fart_node");
         rclcpp::spin(std::make_shared<ExcavationControlNode>());
         rclcpp::shutdown();
         return 0;
