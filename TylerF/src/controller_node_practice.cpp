@@ -105,6 +105,13 @@ private:
   
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
 
+    //sends heartbeats to motors so they are acctually getting the joy input
+  try{
+    leftMotor.heartBeat();
+    rightMotor.heartBeat();
+    vibrator.heartBeat();
+  }
+    
   //we want to void the function because we don't want it to return anything back to ROS
   //the function just acts on any input and doesn't need to return any values
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -159,6 +166,7 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
+
 
 
 
