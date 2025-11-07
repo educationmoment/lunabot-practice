@@ -57,6 +57,7 @@ class ControllerNode : public rclcpp::Node
       rightMotor.SetIdleMode(IdleMode::kBrake);
       leftMotor.SetMotorType(MotorType::kBrushless);
       rightMotor.SetMotorType(MotorType::kBrushless);
+
       leftMotor.Burnflash();
       rightMotor.BurnFlash();
 
