@@ -110,6 +110,9 @@ private:
     leftMotor.heartBeat();
     rightMotor.heartBeat();
     vibrator.heartBeat();
+    rightLift.heartBeat();
+    leftLift.heartBeat();
+    tilt.heartBeat();
   }
     
   //we want to void the function because we don't want it to return anything back to ROS
@@ -122,8 +125,8 @@ private:
     float right_y = msg->axes[Gp::_RIGHT_VERTICAL_STICK]; // Right joystick controls right side
 
     //makes it so the robot isn't going at 100% the whole time. gives the joystick a range of values 
-    left_drive_raw = std::max(-1.0f, std::min(1.0f, left_y));
-    right_drive_raw = std::max(-1.0f, std::min(1.0f, right_y));
+    left_drive_raw = std::max(1.0f, std::min(-1.0f, left_y));
+    right_drive_raw = std::max(1.0f, std::min(-1.0f, right_y));
     
     //compute motor target velocities
     //this is a double and not a float because doubles are more accurate with more digits of precision 
@@ -166,6 +169,7 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
+
 
 
 
