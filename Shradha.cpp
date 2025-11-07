@@ -275,8 +275,8 @@ void joyCallback(const sensor_msg::msg::Joy::SharedPtr joy){
 
     //Tilt actuator (D-pad left/right)
     float tilt_duty = 0.0f;
-    if(joy->axes[6] > 0.5) tilty_duty = 1.0f; //left
-    else if (joy->axes[6] < -0.5) tilty_duty = 1.0f; //right
+    if(joy->axes[6] > 0.5) tilt_duty = 1.0f; //left
+    else if (joy->axes[6] < -0.5) tilt_duty = 1.0f; //right
     tilt.setTiltDuty(tilt_duty);
 
     //lift actuator (d-pad up/down)
