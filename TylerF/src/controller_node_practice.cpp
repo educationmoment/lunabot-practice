@@ -114,10 +114,14 @@ private:
     float left_y = msg->axes[Gp::_LEFT_VERTICAL_STICK];   // Left joystick controls left side
     float right_y = msg->axes[Gp::_RIGHT_VERTICAL_STICK]; // Right joystick controls right side
 
+    //makes it so the robot isn't going at 100% the whole time. gives the joystick a range of values 
+    left_drive_raw = std::max(-1.0f, std::min(1.0f, left_y));
+    right_drive_raw = std::max(-1.0f, std::min(1.0f, right_y));
+    
     //compute motor target velocities
     //this is a double and not a float because doubles are more accurate with more digits of precision 
-    double left_speed = left_y * VELOCITY_MAX;
-    double right_speed = right_y * VELOCITY_MAX;
+    double left_speed = left_drive_raw * VELOCITY_MAX;
+    double right_speed = right_drive_raw * VELOCITY_MAX;
 
     //send the velocity commands to the motors over CAN
     leftMotor.SetVelocity(left_speed);
@@ -155,6 +159,7 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
+
 
 
 
