@@ -104,17 +104,37 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
       float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
 
-      left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
-      right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
+      if (leftJS < -1.0f)
+      {
+        left_drive_raw = -1.0f;
+      }
+      else if (leftJS > 1.0f)
+      {
+        left_drive_raw = 1.0f;
+      }
+      else
+      {
+        left_drive_raw = leftJS;
+      }
 
-      left_drive = computeStepOutput(left_drive_raw);
-      right_drive = computeStepOutput(right_drive_raw);
+      if (rightJS < -1.0f)
+      {
+        right_drive_raw = -1.0f;
+      }
+      else if (rightJS > 1.0f)
+      {
+        right_drive_raw = 1.0f;
+      }
+      else
+      {
+        right_drive_raw = rightJS;
+      }
 
-      leftMotor.SetDutyCycle(left_drive);
-      rightMotor.SetDutyCycle(right_drive);
+      leftMotor.SetVelocity(left_drive);
+      rightMotor.SetVelocity(right_drive);
       
-      leftMotor.HeartBeat();
-      rightMotor.HeartBeat();
+      // leftMotor.HeartBeat();
+      // rightMotor.HeartBeat();
     }
 
     // send excavation request
