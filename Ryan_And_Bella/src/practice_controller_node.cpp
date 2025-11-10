@@ -135,8 +135,8 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
 
       RCLCPP_INFO_THROTTLE(
         this->get_logger(), *this->get_clock(), 1000,
-        "Left Motor: %.2f | Right Motor: %.2f | Vibrator: %s",
-        left_speed, right_speed, vibrator_active ? "ON" : "OFF");
+        "Left Motor: %.2f | Right Motor: %.2f",
+        left_speed, right_speed);
       
       leftMotor.HeartBeat();
       rightMotor.HeartBeat();
