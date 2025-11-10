@@ -52,7 +52,7 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
     // this is basically a shared pointer to a subscription that receives Joy messages
     rclcpp::Subscription<general_msgs::msg::Joy>::SharedPtr joy_subscriber_;
 
-    rclcpp::Client<controller_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;  // 
+    // rclcpp::Client<controller_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;  // 
 
     float computeStepOutput(float input)
     {
@@ -90,8 +90,8 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       // creates a service client inside the current node with 'create_client'
       // <controller_pkg::srv::ExcavationRequest> defines the kind of request and response (the structure) messages this service will use
       // "excavation_service" is the name of the service
-      excavation_client_ = this->create_client<controller_pkg::srv::ExcavationRequest>("excavation_service");
-      RCLCPP_INFO(this->get_logger(), "ControllerNode fully initialized.");
+      // excavation_client_ = this->create_client<controller_pkg::srv::ExcavationRequest>("excavation_service");
+      // RCLCPP_INFO(this->get_logger(), "ControllerNode fully initialized.");
     }
 
     void joy_callback(const general_msgs::msg::Joy::SharedPtr joy_msg)
@@ -132,12 +132,18 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
 
       leftMotor.SetVelocity(left_drive);
       rightMotor.SetVelocity(right_drive);
+
+      RCLCPP_INFO_THROTTLE(
+        this->get_logger(), *this->get_clock(), 1000,
+        "Left Motor: %.2f | Right Motor: %.2f | Vibrator: %s",
+        left_speed, right_speed, vibrator_active ? "ON" : "OFF");
       
-      // leftMotor.HeartBeat();
-      // rightMotor.HeartBeat();
+      leftMotor.HeartBeat();
+      rightMotor.HeartBeat();
     }
 
     // send excavation request
+    /*
     void send_excavation_request()
     {
       auto request = std::make_shared<controller_pkg::srv::ExcavationRequest::Request>();
@@ -146,6 +152,7 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
 
       excavation_client_->async_send_request(request);
     }
+    */
 };
 
 int main(int argc, char **argv){
