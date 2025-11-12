@@ -65,8 +65,8 @@ public:
       rightMotor.SetMotorType(MotorType::kBrushless);
 
       // might not have to do if its already done
-      // leftMotor.BurnFlash();
-      // rightMotor.BurnFlash();
+      leftMotor.BurnFlash();
+      rightMotor.BurnFlash();
     }
 
     // ros topics
