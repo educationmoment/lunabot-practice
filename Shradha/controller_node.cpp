@@ -153,6 +153,35 @@ private: //need to have these
 
       }
     }
+
+    //send the request asynchronosuly
+    auto future_result = excavation_client_->async_send_request(
+      request,
+      [this](rclcpp::Client<controller_pkg::srv::ExcavationRequest>::SharedFuture future_response)
+      {
+        try
+        {
+        auto response = future_response.get();
+        if (response->success)
+        {
+          RCLCPP_INFO(this->get_logger(), "Excavation started successfully.");
+        }
+        else
+        {
+          RCLCPP_WARN(this->get_logger(), "Excavation request failed: %s", response->message.c_str());
+        }  
+      }
+      catch (const std::exception &e)
+          {
+            RCLCPP_ERROR(this->get_logger(), "Service call failed: %s", e.what());
+
+          }
+          
+
+
+
+
+
     // drivetrain
 
     {
