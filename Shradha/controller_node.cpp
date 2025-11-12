@@ -58,9 +58,43 @@ class ControllerNode : public rclcpp::Node
       rightMotor.SetIdleMode(IdleMode::kBrake);
       leftMotor.SetMotorType(MotorType::kBrushless);
       rightMotor.SetMotorType(MotorType::kBrushless);
+
+    leftMotor.SetP(0, 0.0002f);
+    leftMotor.SetI(0, 0.0f);
+    leftMotor.SetD(0, 0.0f);
+    leftMotor.SetF(0, 0.00021f);
+    // PID settings for left motor
+
+    rightMotor.SetP(0, 0.0002f);
+    rightMotor.SetI(0, 0.0f);
+    rightMotor.SetD(0, 0.0f);
+    rightMotor.SetF(0, 0.00021f);
+    // PID settings for right motor
+
+    leftLift.SetP(0, 1.51f);
+    leftLift.SetI(0, 0.0f);
+    leftLift.SetD(0, 0.0f);
+    leftLift.SetF(0, 0.00021f);
+    // PID settings for left lift
+
+    rightLift.SetP(0, 1.51f);
+    rightLift.SetI(0, 0.0f);
+    rightLift.SetD(0, 0.0f);
+    rightLift.SetF(0, 0.00021f);
+    // PID settings for right lift
+
+    // PID settings for tilt
+    tilt.SetP(0, 1.51f);
+    tilt.SetI(0, 0.0f);
+    tilt.SetD(0, 0.0f);
+    tilt.SetF(0, 0.00021f);
+
+
+
+
       // finish configuring
-      // leftMotor.Burnflash()
-      // rightMotor.BurnFlash()
+       leftMotor.Burnflash()
+       rightMotor.BurnFlash()
 
 
     }
@@ -113,34 +147,33 @@ class ControllerNode : public rclcpp::Node
 
 
       float getJoyStickMax(){
-        return 
+        return joy_msg->axes.size(); //raw data on how much the axes is being moved 
       } 
 
       float maxLimit = getJoyStickMax(); //could read from config file
-      float minLimit = -maxLimit; //symmetric limits
 
 
       //for left joystick
-      if(leftJS > maxLimit){
-        left_drive_raw = maxLimit;
+      if(leftJS > 1.0f){
+        left_drive_raw = -1.0f;
       }
-      else if (leftJS < minLimit){
-        left_drive_raw = minLimit;
+      else if (leftJS < -1.0f){
+        left_drive_raw = 1.0f;
       }
       else{
-        left_drive_raw = leftJS;
+        left_drive_raw = getJoyStickMax();
       }
 
 
       //for right joy stick
-      if(rightJS > maxLimit){ //these if statements are essentially creating bounds. cannot be above 1.0 or below -1.0
-        right_draw_raw = maxLimit;
+      if(rightJS > 1.0f){ //these if statements are essentially creating bounds. cannot be above 1.0 or below -1.0
+        right_draw_raw = -1.0f;
       }
-      else if (rightJS < minLimit){
-        right_draw_raw = minLimit;
+      else if (rightJS < -1.0f){
+        right_draw_raw = 1.0f;
       }
       else{
-        right_draw_raw = rightJS; //default is fine
+        right_draw_raw = getJoyStickMax(); //default is fine
       }
 
       left_drive = computeStepOutput(left_drive_raw);
@@ -175,4 +208,3 @@ int main(int argc, char **argv)
   rclcpp::shutdown();
   return 0;
 }
-
