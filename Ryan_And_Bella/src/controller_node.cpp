@@ -64,7 +64,7 @@ public:
       leftMotor.SetMotorType(MotorType::kBrushless);
       rightMotor.SetMotorType(MotorType::kBrushless);
 
-      // might not have to do if its already done
+      // might not have to do if its already done?
       leftMotor.BurnFlash();
       rightMotor.BurnFlash();
     }
@@ -75,7 +75,7 @@ public:
     
     joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
       "/joy", 10,
-      std::bind::(&ControllerNode::joy_callback, this, std::placeholders::_1),
+      std::bind::(&ControllerNode::handle_drive_train, this, std::placeholders::_1),
       RCLCP_INFO(this->get_logger(), "we got joy");
     )
 
@@ -115,14 +115,16 @@ public:
       rightMotor.HeartBeat();
     }  
 
-    void publish_heartbeat()
-    {
-      auto msg = std_msgs::msg::String();
-      msg.data = "Heartbeat";
-      heartbeatPub->publish(msg);
-    }
+    // void publish_heartbeat()
+    // {
+    //   auto msg = std_msgs::msg::String();
+    //   msg.data = "Heartbeat";
+    //   heartbeatPub->publish(msg);
+    // }
 
 }
+
+
 
 int main(int argc, char **argv){
   rclcpp::init(argc, argv);
