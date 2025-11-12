@@ -90,7 +90,35 @@ class ControllerNode : public rclcpp::Node
     tilt.SetF(0, 0.00021f);
 
 
+private: //need to have these
+  // Direct object members.
+  SparkMax leftMotor;
+  SparkMax rightMotor;
+  SparkMax leftLift;
+  SparkMax rightLift;
+  SparkMax tilt;
+  SparkMax vibrator;
 
+  rclcpp::Client<interfaces_pkg::srv::DepositingRequest>::SharedPtr depositing_client_;
+  rclcpp::Client<interfaces_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
+  rclcpp::Subscription<interfaces_pkg::msg::MotorHealth>::SharedPtr health_subscriber_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr heartbeatPub;
+  rclcpp::TimerBase::SharedPtr timer;
+
+  // Autonomy flag
+  bool is_autonomy_active_ = false;
+
+  // Vibrator toggle
+  bool vibrator_active_;
+  bool prev_vibrator_button_;
+
+  // Alternate control mode toggle variables.
+  bool alternate_mode_active_ = false;
+  bool prev_alternate_button_ = false;
+
+  float left_lift_position = 0.0f;
+  float right_lift_position = 0.0f;
 
       // finish configuring
        leftMotor.Burnflash()
