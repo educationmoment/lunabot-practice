@@ -54,11 +54,7 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
 
     // rclcpp::Client<controller_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;  // 
 
-    float computeStepOutput(float input)
-    {
-      // do the thing
-      return input;
-    }
+
   public:
 
     // constructor
@@ -82,20 +78,20 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
 
       leftMotor.BurnFlash();
       rightMotor.BurnFlash();
-
-      // listen to joystick input by subscribing to joystick
-      joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(       // joy_subscriber_ points to live ROS 2 subscription object 
-        "/joy", 10,                                                              // 10 is the queue size. Node can hold up to 10 messags
-        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));  // call joy_callback function
-      RCLCPP_INFO(this->get_logger(), "Joystick subscriber initialized.");
-
-      // initialize excavation
-      // creates a service client inside the current node with 'create_client'
-      // <controller_pkg::srv::ExcavationRequest> defines the kind of request and response (the structure) messages this service will use
-      // "excavation_service" is the name of the service
-      // excavation_client_ = this->create_client<controller_pkg::srv::ExcavationRequest>("excavation_service");
-      // RCLCPP_INFO(this->get_logger(), "ControllerNode fully initialized.");
     }
+
+    // listen to joystick input by subscribing to joystick
+    joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(       // joy_subscriber_ points to live ROS 2 subscription object 
+      "/joy", 10,                                                              // 10 is the queue size. Node can hold up to 10 messags
+      std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));  // call joy_callback function
+    RCLCPP_INFO(this->get_logger(), "Joystick subscriber initialized.");
+
+    // initialize excavation
+    // creates a service client inside the current node with 'create_client'
+    // <controller_pkg::srv::ExcavationRequest> defines the kind of request and response (the structure) messages this service will use
+    // "excavation_service" is the name of the service
+    // excavation_client_ = this->create_client<controller_pkg::srv::ExcavationRequest>("excavation_service");
+    // RCLCPP_INFO(this->get_logger(), "ControllerNode fully initialized.");
 
     void joy_callback(const general_msgs::msg::Joy::SharedPtr joy_msg)
     {
