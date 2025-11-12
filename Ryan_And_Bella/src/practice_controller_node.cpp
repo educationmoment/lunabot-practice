@@ -80,6 +80,9 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       rightMotor.SetIdleMode(IdleMode::kBrake);
       // configure other stuff
 
+      leftMotor.BurnFlash();
+      rightMotor.BurnFlash();
+
       // listen to joystick input by subscribing to joystick
       joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(       // joy_subscriber_ points to live ROS 2 subscription object 
         "/joy", 10,                                                              // 10 is the queue size. Node can hold up to 10 messags
