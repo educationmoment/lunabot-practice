@@ -100,8 +100,8 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       float left_drive_raw = 0.0f;
       float right_drive_raw = 0.0f;
 
-      float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
-      float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
+      float leftJS = -(joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK));
+      float rightJS = -(joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK));
 
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
       right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
