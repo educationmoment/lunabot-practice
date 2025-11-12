@@ -45,52 +45,49 @@ namespace Gp
 class ControllerNode : public rclcpp::Node
 {
 
-private:
-  SparkMax leftMotor;
-  SparkMax rightMotor;
-
-public:
-
-  ControllerNode(const std::string &can_interface)
-  : Node("controller_node"),
-    leftMotor(can_interface, LEFT_MOTOR),
-    rightMotor(can_interface, RIGHT_MOTOR)
+  private:
+    SparkMax leftMotor;
+    SparkMax rightMotor;
+  
+  public:
+    ControllerNode(const std::string &can_interface) : Node("controller_node")
     {
-      RCLCP_INFO(this->get_logger(), "beginning node");
-      RCLCP_INFO(this->get_logger(), "configuring  motor controllers");
+        leftMotor(can_interface, LEFT_MOTOR);
+        rightMotor(can_interface, RIGHT_MOTOR);
+      
+        RCLCP_INFO(this->get_logger(), "beginning node");
+        RCLCP_INFO(this->get_logger(), "configuring  motor controllers");
+  
+        leftMotor.SetIdleMode(IdleMode::kBrake);
+        rightMotor.SetIdleMode(IdleMode::kBrake);
+        leftMotor.SetMotorType(MotorType::kBrushless);
+        rightMotor.SetMotorType(MotorType::kBrushless);
+  
+        // might not have to do if its already done?
+        leftMotor.BurnFlash();
+        rightMotor.BurnFlash();
 
-      leftMotor.SetIdleMode(IdleMode::kBrake);
-      rightMotor.SetIdleMode(IdleMode::kBrake);
-      leftMotor.SetMotorType(MotorType::kBrushless);
-      rightMotor.SetMotorType(MotorType::kBrushless);
-
-      // might not have to do if its already done?
-      leftMotor.BurnFlash();
-      rightMotor.BurnFlash();
+        // ros joy subscriber
+  
+        joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
+          "/joy", 10,
+          std::bind::(&ControllerNode::handle_drive_train, this, std::placeholders::_1),
+          RCLCP_INFO(this->get_logger(), "we got joy");
+        );
     }
+  
+    // request for excavation, don't know if needed now
+    // void send_excavation_request()
+    // {
+    //   if (!excavation_client_){
+    //     RCLCP_INFO(this->get_logger(), "can't find excavation");
+    //     return;
+    //   }
+    //   auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
+    //   request.start_excavation = true;
+    //   RCLCP_INFO(this->get_logger(), "we got excavation~");
+    // }
 
-    // ros topics
-    // /joy
-    // /controller_node
-    
-    joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
-      "/joy", 10,
-      std::bind::(&ControllerNode::handle_drive_train, this, std::placeholders::_1),
-      RCLCP_INFO(this->get_logger(), "we got joy");
-    )
-
-    // request
-    
-    void send_excavation_request()
-    {
-      if (!excavation_client_){
-        RCLCP_INFO(this->get_logger(), "can't find excavation");
-        return;
-      }
-      auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
-      request.start_excavation = true;
-      RCLCP_INFO(this->get_logger(), "we got excavation");
-    }
     //drive train
     void handle_drive_train(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
     {
@@ -102,6 +99,7 @@ public:
       float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
       float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
 
+      // keeps number between -1.0 and 1.0
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
       right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
 
