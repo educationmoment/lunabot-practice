@@ -67,26 +67,27 @@ class ControllerNode : public rclcpp::Node
         leftMotor.BurnFlash();
         rightMotor.BurnFlash();
 
-        // ros joy subscriber
-  
-        joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
-          "/joy", 10,
-          std::bind::(&ControllerNode::handle_drive_train, this, std::placeholders::_1),
-          RCLCP_INFO(this->get_logger(), "we got joy");
-        );
+        
     }
+
+    // ros joy subscriber
+    joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
+      "/joy", 10,
+      std::bind::(&ControllerNode::handle_drive_train, this, std::placeholders::_1),
+      RCLCP_INFO(this->get_logger(), "we got joy");
+    );
   
     // request for excavation, don't know if needed now
-    // void send_excavation_request()
-    // {
-    //   if (!excavation_client_){
-    //     RCLCP_INFO(this->get_logger(), "can't find excavation");
-    //     return;
-    //   }
-    //   auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
-    //   request.start_excavation = true;
-    //   RCLCP_INFO(this->get_logger(), "we got excavation~");
-    // }
+    void send_excavation_request()
+    {
+      if (!excavation_client_){
+        RCLCP_INFO(this->get_logger(), "can't find excavation");
+        return;
+      }
+      auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
+      request.start_excavation = true;
+      RCLCP_INFO(this->get_logger(), "we got excavation~");
+    }
 
     //drive train
     void handle_drive_train(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
@@ -96,8 +97,8 @@ class ControllerNode : public rclcpp::Node
       float left_drive_raw = 0.0f;
       float right_drive_raw = 0.0f;
 
-      float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
-      float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
+      float leftJS = -(joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK));
+      float rightJS = -(joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK));
 
       // keeps number between -1.0 and 1.0
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
