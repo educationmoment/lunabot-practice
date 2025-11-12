@@ -104,31 +104,8 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
       float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
 
-      if (leftJS < -1.0f)
-      {
-        left_drive_raw = -1.0f;
-      }
-      else if (leftJS > 1.0f)
-      {
-        left_drive_raw = 1.0f;
-      }
-      else
-      {
-        left_drive_raw = leftJS;
-      }
-
-      if (rightJS < -1.0f)
-      {
-        right_drive_raw = -1.0f;
-      }
-      else if (rightJS > 1.0f)
-      {
-        right_drive_raw = 1.0f;
-      }
-      else
-      {
-        right_drive_raw = rightJS;
-      }
+      left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
+      right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
 
       leftMotor.SetVelocity(left_drive);
       rightMotor.SetVelocity(right_drive);
