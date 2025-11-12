@@ -1,4 +1,6 @@
 #include "SparkMax.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/string.hpp"
 #include <cmath>
 #include <string>
 #include <cstdlib>
@@ -9,7 +11,9 @@ const float VELOCITY_MAX = 2500.0;
 enum CAN_IDs
 {
   LEFT_MOTOR = 1,
-  RIGHT_MOTOR = 2
+  RIGHT_MOTOR = 2,
+  LEFT_LIFT = 3,
+  RIGHT_LIFT = 4,
 };
 
 namespace Gp
@@ -48,6 +52,10 @@ class ControllerNode : public rclcpp::Node
   private:
     SparkMax leftMotor;
     SparkMax rightMotor;
+    SparkMax leftLift;
+    SparkMax rightLift;
+
+    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joysubscriber;
   
   public:
     ControllerNode(const std::string &can_interface) : Node("controller_node")
@@ -78,16 +86,16 @@ class ControllerNode : public rclcpp::Node
     );
   
     // request for excavation, don't know if needed now
-    void send_excavation_request()
-    {
-      if (!excavation_client_){
-        RCLCP_INFO(this->get_logger(), "can't find excavation");
-        return;
-      }
-      auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
-      request.start_excavation = true;
-      RCLCP_INFO(this->get_logger(), "we got excavation~");
-    }
+    // void send_excavation_request()
+    // {
+    //   if (!excavation_client_){
+    //     RCLCP_INFO(this->get_logger(), "can't find excavation");
+    //     return;
+    //   }
+    //   auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
+    //   request.start_excavation = true;
+    //   RCLCP_INFO(this->get_logger(), "we got excavation~");
+    // }
 
     //drive train
     void handle_drive_train(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
