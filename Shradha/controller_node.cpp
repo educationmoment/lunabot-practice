@@ -97,7 +97,7 @@ class ControllerNode : public rclcpp::Node
       float left_drive = 0.0
       float right_drive = 0.0
       float left_drive_raw = 0.0
-      left right_drive_raw = 0.0
+      float right_drive_raw = 0.0
 
 
 
@@ -112,24 +112,32 @@ class ControllerNode : public rclcpp::Node
       */
 
 
+      float getJoyStickMax(){
+        return 
+      } 
+
+      float maxLimit = getJoyStickMax(); //could read from config file
+      float minLimit = -maxLimit; //symmetric limits
+
+
       //for left joystick
-      if(leftJS > 1.0f){
-        left_drive_raw = 1.0f;
+      if(leftJS > maxLimit){
+        left_drive_raw = maxLimit;
       }
-      else if (leftJS < -1.0f){
-        left_drive_raw = -1.0f;
+      else if (leftJS < minLimit){
+        left_drive_raw = minLimit;
       }
       else{
-        left_drive_jaw = leftJS;
+        left_drive_raw = leftJS;
       }
 
 
       //for right joy stick
-      if(rightJS > 1.0f){ //these if statements are essentially creating bounds. cannot be above 1.0 or below -1.0
-        right_draw_raw = 1.0f;
+      if(rightJS > maxLimit){ //these if statements are essentially creating bounds. cannot be above 1.0 or below -1.0
+        right_draw_raw = maxLimit;
       }
-      else if (rightJS < -1.0f){
-        right_draw_raw = -1.0f;
+      else if (rightJS < minLimit){
+        right_draw_raw = minLimit;
       }
       else{
         right_draw_raw = rightJS; //default is fine
