@@ -194,31 +194,18 @@ class ControllerNode : public rclcpp::Node
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
       right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
 
+      float lift_trig = (joy_msg.axes(Gp::Axes::_LEFT_TRIGGER));
       // lift stuff
-      if (joy_msg->buttons[Gp::Buttons::_D_PAD_DOWN] > 0)
-      {
-        lift_raw = -1.0f;
-      }
-      else if (joy_msg->buttons[Gp::Buttons::_D_PAD_UP] > 0)
-      {
-        lift_raw = 1.0f;
-      }
-      else 
-      {
-        left_lift.SetDutyCycle(lift_raw);
-        right_lift.SetDutyCycle(lift_raw);
-      }
-
+      lift_raw = std::max(0.0f, std::min(1.0f, lift_trig));
+      
       // how to get position?? ask later about this. is it in health node and do I need that first??
-        
-
       left_drive = computeStepOutput(left_drive_raw);
       right_drive = computeStepOutput(right_drive_raw);
 
       leftMotor.SetDutyCycle(left_drive);
       rightMotor.SetDutyCycle(right_drive);
-      leftLift.SetDutyCycle(0.0f);
-      rightLift.SetDutyCycle(0.0f);
+      leftLift.SetDutyCycle(lift_raw);
+      rightLift.SetDutyCycle(lift_raw);
       
       leftMotor.HeartBeat();
       rightMotor.HeartBeat();
