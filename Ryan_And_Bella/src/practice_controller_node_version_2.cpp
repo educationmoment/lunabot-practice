@@ -152,11 +152,42 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
     void joy_callback(const general_msgs::msg::Joy::SharedPtr joy_msg)
     {
       float left_drive = 0.0f;
-      float right_drive = 0.0f;
+      float right_drive= 0.0f;
       float left_drive_raw = 0.0f;
       float right_drive_raw = 0.0f;
+      float lift_trigger = 0.0f;
+      float lift = 0.0f;
 
-      
+      leftMotor.Heartbeat();
+      rightMotor.Heartbeat();
+      leftLift.Heartbeat();
+      rightLift.Heartbeat();
+
+      // take in input
+      // use left trigger for lift
+      float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
+      float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
+      lift_trigger = joy_msg->buttons(Gp::Buttons::_LEFT_TRIGGER);
+
+      // make sure drive input is in between -1 and 1
+      left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
+      right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
+
+      // make sure lift input is in between 0 and 1
+      lift = std::max(0.0f, std::min(1.0f, rightJS));
+
+      //process drive input
+      left_drive = computeStepOutput(left_drive_raw);
+      right_drive = computeStepOutput(right_drive_raw);
+
+      // move wheels
+      leftMotor.SetVelocity(left_drive);
+      rightMotor.SetVelocity(right_drive);
+
+      // perform lift
+      // do i use SetPosition?
+      leftLift.SetPosition(lift);
+      rightLift.SetPosition(lift);
     }
 };
 

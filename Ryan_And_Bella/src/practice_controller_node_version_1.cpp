@@ -106,6 +106,9 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
       right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
 
+      left_drive = computeStepOutput(left_drive_raw);
+      right_drive = computeStepOutput(right_drive_raw);
+
       leftMotor.SetVelocity(left_drive);
       rightMotor.SetVelocity(right_drive);
 
