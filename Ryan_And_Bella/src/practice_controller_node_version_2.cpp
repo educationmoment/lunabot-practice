@@ -174,7 +174,7 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
 
       // make sure lift input is in between 0 and 1
-      lift = std::max(0.0f, std::min(1.0f, rightJS));
+      // lift = std::max(0.0f, std::min(1.0f, rightJS));
 
       //process drive input
       left_drive = computeStepOutput(left_drive_raw);
@@ -186,8 +186,8 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
 
       // perform lift
       // do i use SetPosition?
-      leftLift.SetPosition(lift);
-      rightLift.SetPosition(lift);
+      leftLift.SetPosition(lift_trigger);
+      rightLift.SetPosition(lift_trigger);
 
       RCLCPP_INFO_THROTTLE(
         this->get_logger(), *this->get_clock(), 1000,
