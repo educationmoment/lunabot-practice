@@ -58,45 +58,124 @@ class ControllerNode : public rclcpp::Node
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joysubscriber;
   
   public:
-    ControllerNode(const std::string &can_interface) : Node("controller_node")
+    ControllerNode(const std::string &can_interface)
+        : Node("controller_node"),
+          leftMotor(can_interface, LEFT_MOTOR),
+          rightMotor(can_interface, RIGHT_MOTOR),
+          leftLift(can_interface, LEFT_LIFT),
+          rightLift(can_interface, RIGHT_LIFT),
+          tilt(can_interface, TILT),
+          vibrator(can_interface, VIBRATOR),
+          vibrator_active_(false),
+          prev_vibrator_button_(false),
+          alternate_mode_active_(false),
+          prev_alternate_button_(false)
     {
-        leftMotor(can_interface, LEFT_MOTOR);
-        rightMotor(can_interface, RIGHT_MOTOR);
-      
-        RCLCP_INFO(this->get_logger(), "beginning node");
-        RCLCP_INFO(this->get_logger(), "configuring  motor controllers");
+      RCLCPP_INFO(this->get_logger(), "Begin Initializing Node");
   
-        leftMotor.SetIdleMode(IdleMode::kBrake);
-        rightMotor.SetIdleMode(IdleMode::kBrake);
-        leftMotor.SetMotorType(MotorType::kBrushless);
-        rightMotor.SetMotorType(MotorType::kBrushless);
+      RCLCPP_INFO(this->get_logger(), "Initializing Motor Controllers");
   
-        // might not have to do if its already done?
-        leftMotor.BurnFlash();
-        rightMotor.BurnFlash();
-
-        
+      leftMotor.SetIdleMode(IdleMode::kBrake);
+      rightMotor.SetIdleMode(IdleMode::kBrake);
+      leftMotor.SetMotorType(MotorType::kBrushless);
+      rightMotor.SetMotorType(MotorType::kBrushless);
+      leftMotor.SetSensorType(SensorType::kHallSensor);
+      rightMotor.SetSensorType(SensorType::kHallSensor);
+      // Initializes the settings for the drivetrain motors
+  
+      leftLift.SetIdleMode(IdleMode::kBrake);
+      rightLift.SetIdleMode(IdleMode::kBrake);
+      leftLift.SetMotorType(MotorType::kBrushed);
+      rightLift.SetMotorType(MotorType::kBrushed);
+      leftLift.SetSensorType(SensorType::kEncoder);
+      rightLift.SetSensorType(SensorType::kEncoder);
+      // Initializes the settings for the lift actuators
+  
+      tilt.SetIdleMode(IdleMode::kBrake);
+      tilt.SetMotorType(MotorType::kBrushed);
+      tilt.SetSensorType(SensorType::kEncoder);
+      // Initializes the settings for the tilt actuator
+  
+      vibrator.SetIdleMode(IdleMode::kBrake);
+      vibrator.SetMotorType(MotorType::kBrushed);
+      vibrator.SetSensorType(SensorType::kEncoder);
+      // Initializes the settings fro the vibrator
+  
+      leftMotor.SetInverted(false);
+      rightMotor.SetInverted(true);
+      leftLift.SetInverted(true);
+      rightLift.SetInverted(true);
+      tilt.SetInverted(true);
+      vibrator.SetInverted(true);
+      // Initializes the inverting status
+  
+      leftMotor.SetP(0, 0.0002f);
+      leftMotor.SetI(0, 0.0f);
+      leftMotor.SetD(0, 0.0f);
+      leftMotor.SetF(0, 0.00021f);
+      // PID settings for left motor
+  
+      rightMotor.SetP(0, 0.0002f);
+      rightMotor.SetI(0, 0.0f);
+      rightMotor.SetD(0, 0.0f);
+      rightMotor.SetF(0, 0.00021f);
+      // PID settings for right motor
+  
+      leftLift.SetP(0, 1.51f);
+      leftLift.SetI(0, 0.0f);
+      leftLift.SetD(0, 0.0f);
+      leftLift.SetF(0, 0.00021f);
+      // PID settings for left lift
+  
+      rightLift.SetP(0, 1.51f);
+      rightLift.SetI(0, 0.0f);
+      rightLift.SetD(0, 0.0f);
+      rightLift.SetF(0, 0.00021f);
+      // PID settings for right lift
+  
+      // PID settings for tilt
+      tilt.SetP(0, 1.51f);
+      tilt.SetI(0, 0.0f);
+      tilt.SetD(0, 0.0f);
+      tilt.SetF(0, 0.00021f);
+      // PID settings for tilt
+  
+      leftMotor.BurnFlash();
+      rightMotor.BurnFlash();
+      leftLift.BurnFlash();
+      rightLift.BurnFlash();
+      tilt.BurnFlash();
+      vibrator.BurnFlash();
+      RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
+  
+      // ---ROS SUBSCRIPTIONS--- //
+      RCLCPP_INFO(this->get_logger(), "Initializing Joy Subscription");
+      joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
+          "/joy", 10,
+          std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
+      RCLCPP_INFO(this->get_logger(), "Joy Subscription Initialized");
+  
+      health_subscriber_ = this->create_subscription<interfaces_pkg::msg::MotorHealth>(
+          "/health_topic", 10,
+          std::bind(&ControllerNode::position_callback, this, std::placeholders::_1));
+  
+      RCLCPP_INFO(this->get_logger(), "Initializing depositing, excavation, and travel client");
+      depositing_client_ = (this->create_client<interfaces_pkg::srv::DepositingRequest>("depositing_service"));
+      excavation_client_ = (this->create_client<interfaces_pkg::srv::ExcavationRequest>("excavation_service"));
+      RCLCPP_INFO(this->get_logger(), "Excavation, depositing clients initialized");
+  
+      RCLCPP_INFO(this->get_logger(), "Initializing Heartbeat Publisher");
+      heartbeatPub = this->create_publisher<std_msgs::msg::String>("/heartbeat", 10);
+      RCLCPP_INFO(this->get_logger(), "Heartbeat Publisher Initialized");
+  
+      RCLCPP_INFO(this->get_logger(), "Initializing Timer");
+      timer = this->create_wall_timer(
+          std::chrono::milliseconds(1000),
+          std::bind(&ControllerNode::publish_heartbeat, this));
+      RCLCPP_INFO(this->get_logger(), "Timer Initialized");
+  
+      RCLCPP_INFO(this->get_logger(), "Node Initialization Complete");
     }
-
-    // ros joy subscriber
-    joy_subscriber_ = this->create_subscription<general_msgs::msg::Joy>(
-      "/joy", 10,
-      std::bind::(&ControllerNode::handle_drive_train, this, std::placeholders::_1),
-      RCLCP_INFO(this->get_logger(), "we got joy");
-    );
-  
-    // request for excavation, don't know if needed now
-    // void send_excavation_request()
-    // {
-    //   if (!excavation_client_){
-    //     RCLCP_INFO(this->get_logger(), "can't find excavation");
-    //     return;
-    //   }
-    //   auto request = std::make_sharedcontroller_pkg::srv::ExcavationRequest::Request>();
-    //   request.start_excavation = true;
-    //   RCLCP_INFO(this->get_logger(), "we got excavation~");
-    // }
-
     //drive train
     void handle_drive_train(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
     {
@@ -106,26 +185,45 @@ class ControllerNode : public rclcpp::Node
       float right_drive_raw = 0.0f;
       float left_lift = 0.0f;
       float right_lift = 0.0f;
-      float left_lift_raw = 0.0f;
-      float right_lift_raw = 0.0f;
+      float lift_raw = 0.0f;
 
       float leftJS = -(joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK));
       float rightJS = -(joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK));
-      float upDPAD = ;
-      float downDPAD = ;
 
       // keeps number between -1.0 and 1.0
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
       right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
+
+      // lift stuff
+      if (joy_msg->buttons[Gp::Buttons::_D_PAD_DOWN] > 0)
+      {
+        lift_raw = -1.0f;
+      }
+      else if (joy_msg->buttons[Gp::Buttons::_D_PAD_UP] > 0)
+      {
+        lift_raw = 1.0f;
+      }
+      else 
+      {
+        left_lift.SetDutyCycle(lift_raw);
+        right_lift.SetDutyCycle(lift_raw);
+      }
+
+      // how to get position?? ask later about this. is it in health node and do I need that first??
+        
 
       left_drive = computeStepOutput(left_drive_raw);
       right_drive = computeStepOutput(right_drive_raw);
 
       leftMotor.SetDutyCycle(left_drive);
       rightMotor.SetDutyCycle(right_drive);
+      leftLift.SetDutyCycle(0.0f);
+      rightLift.SetDutyCycle(0.0f);
       
       leftMotor.HeartBeat();
       rightMotor.HeartBeat();
+      leftLift.Heartbeat();
+      rightLift.Heartbeat();
     }  
 
     // void publish_heartbeat()
