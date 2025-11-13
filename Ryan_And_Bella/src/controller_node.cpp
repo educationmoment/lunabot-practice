@@ -104,9 +104,15 @@ class ControllerNode : public rclcpp::Node
       float right_drive = 0.0f;
       float left_drive_raw = 0.0f;
       float right_drive_raw = 0.0f;
+      float left_lift = 0.0f;
+      float right_lift = 0.0f;
+      float left_lift_raw = 0.0f;
+      float right_lift_raw = 0.0f;
 
       float leftJS = -(joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK));
       float rightJS = -(joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK));
+      float upDPAD = ;
+      float downDPAD = ;
 
       // keeps number between -1.0 and 1.0
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
