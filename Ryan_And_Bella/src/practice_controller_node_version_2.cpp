@@ -188,6 +188,11 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       // do i use SetPosition?
       leftLift.SetPosition(lift);
       rightLift.SetPosition(lift);
+
+      RCLCPP_INFO_THROTTLE(
+        this->get_logger(), *this->get_clock(), 1000,
+        "Left Motor: %.2f | Right Motor: %.2f | Lift: %.2f",
+        left_drive, right_drive, lift);
     }
 };
 
