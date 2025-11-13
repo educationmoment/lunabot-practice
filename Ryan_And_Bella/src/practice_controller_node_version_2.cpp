@@ -49,23 +49,17 @@ namespace Controller // corresponding numbers are indicies
 class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::Node (ROS node) features
 {
   public:
-    ControllerNode(const std::string &can_interface)
-      : Node("controller_node"),
-        leftMotor(can_interface, LEFT_MOTOR),
-        rightMotor(can_interface, RIGHT_MOTOR),
-        leftLift(can_interface, LEFT_LIFT),
-        rightLift(can_interface, RIGHT_LIFT),
-        tilt(can_interface, TILT),
-        vibrator(can_interface, VIBRATOR),
-        vibrator_active_(false),
-        prev_vibrator_button_(false),
-        alternate_mode_active_(false),
-        prev_alternate_button_(false)
+    ControllerNode(const std::string &can_interface) : Node("controller_node")
     {
+      // Initialize motors and lift
+      leftMotor = SparkMax(can_interface, LEFT_MOTOR);
+      rightMotor = SparkMax(can_interface, RIGHT_MOTOR);
+      leftLift = SparkMax(can_interface, LEFT_LIFT);
+      rightLift = SparkMax(can_interface, RIGHT_LIFT);
+
       RCLCPP_INFO(this->get_logger(), "Begin Initializing Node");
-    
       RCLCPP_INFO(this->get_logger(), "Initializing Motor Controllers");
-    
+
       leftMotor.SetIdleMode(IdleMode::kBrake);
       rightMotor.SetIdleMode(IdleMode::kBrake);
       leftMotor.SetMotorType(MotorType::kBrushless);
@@ -73,7 +67,7 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       leftMotor.SetSensorType(SensorType::kHallSensor);
       rightMotor.SetSensorType(SensorType::kHallSensor);
       // Initializes the settings for the drivetrain motors
-    
+
       leftLift.SetIdleMode(IdleMode::kBrake);
       rightLift.SetIdleMode(IdleMode::kBrake);
       leftLift.SetMotorType(MotorType::kBrushed);
@@ -81,95 +75,89 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       leftLift.SetSensorType(SensorType::kEncoder);
       rightLift.SetSensorType(SensorType::kEncoder);
       // Initializes the settings for the lift actuators
-    
-      tilt.SetIdleMode(IdleMode::kBrake);
-      tilt.SetMotorType(MotorType::kBrushed);
-      tilt.SetSensorType(SensorType::kEncoder);
-      // Initializes the settings for the tilt actuator
-    
-      vibrator.SetIdleMode(IdleMode::kBrake);
-      vibrator.SetMotorType(MotorType::kBrushed);
-      vibrator.SetSensorType(SensorType::kEncoder);
-      // Initializes the settings fro the vibrator
-    
+
       leftMotor.SetInverted(false);
       rightMotor.SetInverted(true);
       leftLift.SetInverted(true);
       rightLift.SetInverted(true);
-      tilt.SetInverted(true);
-      vibrator.SetInverted(true);
       // Initializes the inverting status
-    
+
       leftMotor.SetP(0, 0.0002f);
       leftMotor.SetI(0, 0.0f);
       leftMotor.SetD(0, 0.0f);
       leftMotor.SetF(0, 0.00021f);
       // PID settings for left motor
-    
+
       rightMotor.SetP(0, 0.0002f);
       rightMotor.SetI(0, 0.0f);
       rightMotor.SetD(0, 0.0f);
       rightMotor.SetF(0, 0.00021f);
       // PID settings for right motor
-    
+
       leftLift.SetP(0, 1.51f);
       leftLift.SetI(0, 0.0f);
       leftLift.SetD(0, 0.0f);
       leftLift.SetF(0, 0.00021f);
       // PID settings for left lift
-    
+
       rightLift.SetP(0, 1.51f);
       rightLift.SetI(0, 0.0f);
       rightLift.SetD(0, 0.0f);
       rightLift.SetF(0, 0.00021f);
       // PID settings for right lift
-    
-      // PID settings for tilt
-      tilt.SetP(0, 1.51f);
-      tilt.SetI(0, 0.0f);
-      tilt.SetD(0, 0.0f);
-      tilt.SetF(0, 0.00021f);
-      // PID settings for tilt
-    
+
       leftMotor.BurnFlash();
       rightMotor.BurnFlash();
       leftLift.BurnFlash();
       rightLift.BurnFlash();
-      tilt.BurnFlash();
-      vibrator.BurnFlash();
+
       RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
-    
-      // ---ROS SUBSCRIPTIONS--- //
+
+      // ROS subscriptions
+      // might need to move this
       RCLCPP_INFO(this->get_logger(), "Initializing Joy Subscription");
       joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
-          "/joy", 10,
-          std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
+        "/joy", 10,
+        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
       RCLCPP_INFO(this->get_logger(), "Joy Subscription Initialized");
-    
-      health_subscriber_ = this->create_subscription<interfaces_pkg::msg::MotorHealth>(
-          "/health_topic", 10,
-          std::bind(&ControllerNode::position_callback, this, std::placeholders::_1));
-    
-      RCLCPP_INFO(this->get_logger(), "Initializing depositing, excavation, and travel client");
-      depositing_client_ = (this->create_client<interfaces_pkg::srv::DepositingRequest>("depositing_service"));
-      excavation_client_ = (this->create_client<interfaces_pkg::srv::ExcavationRequest>("excavation_service"));
-      RCLCPP_INFO(this->get_logger(), "Excavation, depositing clients initialized");
-    
-      RCLCPP_INFO(this->get_logger(), "Initializing Heartbeat Publisher");
-      heartbeatPub = this->create_publisher<std_msgs::msg::String>("/heartbeat", 10);
-      RCLCPP_INFO(this->get_logger(), "Heartbeat Publisher Initialized");
-    
-      RCLCPP_INFO(this->get_logger(), "Initializing Timer");
-      timer = this->create_wall_timer(
-          std::chrono::milliseconds(1000),
-          std::bind(&ControllerNode::publish_heartbeat, this));
-      RCLCPP_INFO(this->get_logger(), "Timer Initialized");
-    
-      RCLCPP_INFO(this->get_logger(), "Node Initialization Complete");
+    }
+  private:
+    // Direct object members.
+    SparkMax leftMotor;
+    SparkMax rightMotor;
+    SparkMax leftLift;
+    SparkMax rightLift;
+
+    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
+
+    float left_lift_position = 0.0f;
+    float right_lift_position = 0.0f;
+
+    float computeStepOutput(float value)
+    {
+      float absVal = std::fabs(value);
+      const float thresholds[] = {0.25f, 0.5f, 0.75f, 1.0f};
+      const float outputs[] = {0.0f, 0.25f, 0.5f, 0.75f};
+
+      // can use .size() instead of 4
+      for (int i = 0; i < 4; ++i) {
+        if (absVal < thresholds[i])
+          return (value > 0 ? outputs[i] : -outputs[i]);
+      }
+
+      return (value > 0 ? 1.0f : -1.0f);
     }
 
-  private:
-    
+
+    void joy_callback(const general_msgs::msg::Joy::SharedPtr joy_msg)
+    {
+      float left_drive = 0.0f;
+      float right_drive = 0.0f;
+      float left_drive_raw = 0.0f;
+      float right_drive_raw = 0.0f;
+
+      
+    }
 };
 
 int main(int argc, char **argv){
