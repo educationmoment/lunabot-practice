@@ -90,39 +90,11 @@ class ControllerNode : public rclcpp::Node
     tilt.SetF(0, 0.00021f);
 
 
-private: //need to have these
-  // Direct object members.
-  SparkMax leftMotor;
-  SparkMax rightMotor;
-  SparkMax leftLift;
-  SparkMax rightLift;
-  SparkMax tilt;
-  SparkMax vibrator;
 
-  rclcpp::Client<interfaces_pkg::srv::DepositingRequest>::SharedPtr depositing_client_;
-  rclcpp::Client<interfaces_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;
-  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
-  rclcpp::Subscription<interfaces_pkg::msg::MotorHealth>::SharedPtr health_subscriber_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr heartbeatPub;
-  rclcpp::TimerBase::SharedPtr timer;
 
-  // Autonomy flag
-  bool is_autonomy_active_ = false;
-
-  // Vibrator toggle
-  bool vibrator_active_;
-  bool prev_vibrator_button_;
-
-  // Alternate control mode toggle variables.
-  bool alternate_mode_active_ = false;
-  bool prev_alternate_button_ = false;
-
-  float left_lift_position = 0.0f;
-  float right_lift_position = 0.0f;
-
-      // finish configuring
-       leftMotor.Burnflash()
-       rightMotor.BurnFlash()
+    // finish configuring
+    leftMotor.Burnflash()
+    rightMotor.BurnFlash()
 
 
     }
@@ -138,49 +110,37 @@ private: //need to have these
       
     }
     // request 
-
+    
+    void send_dig_command()
     {
-      void send_excavation_request()
-      {
-        if (!excavation_client_)
-          {
-            RCLCP_INFO(this.get_logger(), "cant find excvation");
-            return;
-          }
-        auto request = std::make_shared<controller_pkg::srv::ExcavationRequest::Request>();
-        request.start_excavation = true;
-        RCLCP_INFO(this.get_logger(), "we got excavation");
-
+      if(!excavation_client_){
+        RCLPP_WARN(this->get_logger(), "Can't find excavation");
+        return; //returns nothign if you cannot excavate
       }
-    }
 
-    //send the request asynchronosuly
-    auto future_result = excavation_client_->async_send_request(
-      request,
-      [this](rclcpp::Client<controller_pkg::srv::ExcavationRequest>::SharedFuture future_response)
-      {
-        try
+      auto dig_request = std::make_shared<my_robot_pkg::srv::DigCommand::Request>();
+      dig_request->activate_digging = true;
+
+      //Log that we're sending dig request
+      RCLCPP_INFO(this->get_logger(), "Sending excavation request");
+
+
+      //send the request asynchronously
+      auto future_result = dig_client->async_send_request(
+        dig_request,
+        [this](rclcpp::Client<my_robot_pkg::srv::DigCommand>::SharedFuture response)
         {
-        auto response = future_response.get();
-        if (response->success)
-        {
-          RCLCPP_INFO(this->get_logger(), "Excavation started successfully.");
-        }
-        else
-        {
-          RCLCPP_WARN(this->get_logger(), "Excavation request failed: %s", response->message.c_str());
+          if(response.get()->accepted)
+          {
+            RCLCPP_INFO(this->get_logger(), "Digging successful");
+          }
+          else
+          {
+            RCLCPP_WARN(this->get_logger(), "Digging was rejected by the server");
+          }
         }  
-      }
-      catch (const std::exception &e)
-          {
-            RCLCPP_ERROR(this->get_logger(), "Service call failed: %s", e.what());
-
-          }
-          
-
-
-
-
+      )
+    }
 
     // drivetrain
 
