@@ -130,8 +130,8 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
 
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
 
-    float left_lift_position = 0.0f;
-    float right_lift_position = 0.0f;
+    // float left_lift_position = 0.0f;
+    // float right_lift_position = 0.0f;
 
     float computeStepOutput(float value)
     {
@@ -149,7 +149,7 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
     }
 
 
-    void joy_callback(const general_msgs::msg::Joy::SharedPtr joy_msg)
+    void joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
     {
       float left_drive = 0.0f;
       float right_drive= 0.0f;
@@ -165,9 +165,9 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
 
       // take in input
       // use left trigger for lift
-      float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
-      float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
-      lift_trigger = joy_msg.axes(Gp::Axes::_LEFT_TRIGGER);
+      float leftJS = joy_msg->axes[Controller::Axes::_LEFT_VERTICAL_STICK];
+      float rightJS = joy_msg->axes[Controller::Axes::_RIGHT_VERTICAL_STICK];
+      lift_trigger = joy_msg->axes[Controller::Axes::_LEFT_TRIGGER];
 
       // make sure drive input is in between -1 and 1
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
@@ -200,7 +200,7 @@ int main(int argc, char **argv){
   rclcpp::init(argc, argv);
   std::string can_interface = "can0";
   auto temp_node = std::make_shared<ControllerNode>(can_interface);
-  RCLCP_INFO(this->get_logger(), "started controller node");
+  RCLCPP_INFO(temp_node->get_logger(), "started controller node");
   rclcpp::spin(temp_node);
   rclcpp::shutdown();
   return 0;
