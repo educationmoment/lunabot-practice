@@ -1,4 +1,159 @@
-  }
+#include "SparkMax.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/joy.hpp"
+#include "std_msgs/msg/string.hpp"
+#include "interfaces_pkg/msg/motor_health.hpp"
+#include "interfaces_pkg/srv/depositing_request.hpp"
+#include "interfaces_pkg/srv/excavation_request.hpp"
+#include <cmath>
+#include <string>
+#include <cstdlib>
+#include <algorithm>
+
+const float VELOCITY_MAX = 2500.0;  // rpm, after gearbox turns into 11.1 RPM
+const float VIBRATOR_OUTPUT = 1.0f; // Constant value for vibrator output
+
+enum CAN_IDs
+{
+  LEFT_MOTOR = 1,
+  RIGHT_MOTOR = 2,
+  LEFT_LIFT = 3,
+  RIGHT_LIFT = 4,
+  TILT = 5,
+  VIBRATOR = 6
+};
+
+namespace Gp
+{
+  enum Buttons
+  {
+    _A = 0,             // Excavation Autonomy
+    _B = 1,             // Stop Automation
+    _X = 2,             // Excavation Reset
+    _Y = 3,             // Deposit Autonomy
+    _LEFT_BUMPER = 4,   // Alternate between control modes
+    _RIGHT_BUMPER = 5,  // Vibration Toggle
+    _LEFT_TRIGGER = 6,  // Safety Trigger
+    _RIGHT_TRIGGER = 7, // Safety Trigger
+    _WINDOW_KEY = 8,    // Button 8 /** I do not know what else to call this key */
+    _D_PAD_UP = 12,     // Lift Actuator UP
+    _D_PAD_DOWN = 13,   // Lift Actuator DOWN
+    _D_PAD_LEFT = 14,   // Tilt Actuator Up   /** CHECK THESE */
+    _D_PAD_RIGHT = 15,  // Tilt Actuator Down /** CHECK THESE */
+    _X_BOX_KEY = 16
+  };
+
+  enum Axes
+  {
+    _LEFT_HORIZONTAL_STICK = 0,
+    _LEFT_VERTICAL_STICK = 1,
+    _RIGHT_HORIZONTAL_STICK = 2,
+    _RIGHT_VERTICAL_STICK = 3,
+  };
+}
+
+class ControllerNode : public rclcpp::Node
+{
+public:
+  /** Function: ControllerNode Constructor
+   * @brief ControllerNode class Constructor is passed a string reference of a CAN interface.
+   *        It initiallizes the motors by flashing configuration settings to the SparkMaxes.
+   *        Furtheremore, this creates subscriptions(2), publishers(3), and a timer for the following, respectively:
+   *        joy_topic, health_subscriber, depositing client, excavation client, heartbeat pub, and a timer to publisher heatbeat.
+   * @param can_interface The interface used by the operating system to communicate
+   *                      on the Controller Area Network, listed under 'ip link list' (i.e., can0)
+   * @returns None
+   */
+  ControllerNode(const std::string &can_interface)
+      : Node("controller_node"),
+        leftMotor(can_interface, LEFT_MOTOR),
+        rightMotor(can_interface, RIGHT_MOTOR),
+        leftLift(can_interface, LEFT_LIFT),
+        rightLift(can_interface, RIGHT_LIFT),
+        tilt(can_interface, TILT),
+        vibrator(can_interface, VIBRATOR),
+        vibrator_active_(false),
+        prev_vibrator_button_(false),
+        alternate_mode_active_(false),
+        prev_alternate_button_(false)
+  {
+    RCLCPP_INFO(this->get_logger(), "Begin Initializing Node");
+
+    RCLCPP_INFO(this->get_logger(), "Initializing Motor Controllers");
+
+    leftMotor.SetIdleMode(IdleMode::kBrake);
+    rightMotor.SetIdleMode(IdleMode::kBrake);
+    leftMotor.SetMotorType(MotorType::kBrushless);
+    rightMotor.SetMotorType(MotorType::kBrushless);
+    leftMotor.SetSensorType(SensorType::kHallSensor);
+    rightMotor.SetSensorType(SensorType::kHallSensor);
+    // Initializes the settings for the drivetrain motors
+
+    leftLift.SetIdleMode(IdleMode::kBrake);
+    rightLift.SetIdleMode(IdleMode::kBrake);
+    leftLift.SetMotorType(MotorType::kBrushed);
+    rightLift.SetMotorType(MotorType::kBrushed);
+    leftLift.SetSensorType(SensorType::kEncoder);
+    rightLift.SetSensorType(SensorType::kEncoder);
+    // Initializes the settings for the lift actuators
+
+    tilt.SetIdleMode(IdleMode::kBrake);
+    tilt.SetMotorType(MotorType::kBrushed);
+    tilt.SetSensorType(SensorType::kEncoder);
+    // Initializes the settings for the tilt actuator
+
+    vibrator.SetIdleMode(IdleMode::kBrake);
+    vibrator.SetMotorType(MotorType::kBrushed);
+    vibrator.SetSensorType(SensorType::kEncoder);
+    // Initializes the settings fro the vibrator
+
+    leftMotor.SetInverted(false);
+    rightMotor.SetInverted(true);
+    leftLift.SetInverted(true);
+    rightLift.SetInverted(true);
+    tilt.SetInverted(true);
+    vibrator.SetInverted(true);
+    // Initializes the inverting status
+
+    leftMotor.SetP(0, 0.0002f);
+    leftMotor.SetI(0, 0.0f);
+    leftMotor.SetD(0, 0.0f);
+    leftMotor.SetF(0, 0.00021f);
+    // PID settings for left motor
+
+    rightMotor.SetP(0, 0.0002f);
+    rightMotor.SetI(0, 0.0f);
+    rightMotor.SetD(0, 0.0f);
+    rightMotor.SetF(0, 0.00021f);
+    // PID settings for right motor
+
+    leftLift.SetP(0, 1.51f);
+    leftLift.SetI(0, 0.0f);
+    leftLift.SetD(0, 0.0f);
+    leftLift.SetF(0, 0.00021f);
+    // PID settings for left lift
+
+    rightLift.SetP(0, 1.51f);
+    rightLift.SetI(0, 0.0f);
+    rightLift.SetD(0, 0.0f);
+    rightLift.SetF(0, 0.00021f);
+    // PID settings for right lift
+
+    // PID settings for tilt
+    tilt.SetP(0, 1.51f);
+    tilt.SetI(0, 0.0f);
+    tilt.SetD(0, 0.0f);
+    tilt.SetF(0, 0.00021f);
+    // PID settings for tilt
+
+    leftMotor.BurnFlash();
+    rightMotor.BurnFlash();
+    leftLift.BurnFlash();
+    rightLift.BurnFlash();
+    tilt.BurnFlash();
+    vibrator.BurnFlash();
+    RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
+}
 
     // Subscriber to joystick
     joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
