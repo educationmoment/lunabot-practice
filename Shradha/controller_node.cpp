@@ -35,11 +35,11 @@ namespace Gp
     _RIGHT_BUMPER = 5,  // Vibration Toggle
     _LEFT_TRIGGER = 6,  // Safety Trigger
     _RIGHT_TRIGGER = 7, // Safety Trigger
-    _WINDOW_KEY = 8,    // Button 8 /** I do not know what else to call this key */
+    _WINDOW_KEY = 8,    // Button 8
     _D_PAD_UP = 12,     // Lift Actuator UP
     _D_PAD_DOWN = 13,   // Lift Actuator DOWN
-    _D_PAD_LEFT = 14,   // Tilt Actuator Up   /** CHECK THESE */
-    _D_PAD_RIGHT = 15,  // Tilt Actuator Down /** CHECK THESE */
+    _D_PAD_LEFT = 14,   // Tilt Actuator Up
+    _D_PAD_RIGHT = 15,  // Tilt Actuator Down
     _X_BOX_KEY = 16
   };
 
@@ -55,15 +55,6 @@ namespace Gp
 class ControllerNode : public rclcpp::Node
 {
 public:
-  /** Function: ControllerNode Constructor
-   * @brief ControllerNode class Constructor is passed a string reference of a CAN interface.
-   *        It initiallizes the motors by flashing configuration settings to the SparkMaxes.
-   *        Furtheremore, this creates subscriptions(2), publishers(3), and a timer for the following, respectively:
-   *        joy_topic, health_subscriber, depositing client, excavation client, heartbeat pub, and a timer to publisher heatbeat.
-   * @param can_interface The interface used by the operating system to communicate
-   *                      on the Controller Area Network, listed under 'ip link list' (i.e., can0)
-   * @returns None
-   */
   ControllerNode(const std::string &can_interface)
       : Node("controller_node"),
         leftMotor(can_interface, LEFT_MOTOR),
@@ -78,84 +69,79 @@ public:
         prev_alternate_button_(false)
   {
     RCLCPP_INFO(this->get_logger(), "Begin Initializing Node");
-
     RCLCPP_INFO(this->get_logger(), "Initializing Motor Controllers");
 
+    // --- Drivetrain Motors ---
     leftMotor.SetIdleMode(IdleMode::kBrake);
     rightMotor.SetIdleMode(IdleMode::kBrake);
     leftMotor.SetMotorType(MotorType::kBrushless);
     rightMotor.SetMotorType(MotorType::kBrushless);
     leftMotor.SetSensorType(SensorType::kHallSensor);
     rightMotor.SetSensorType(SensorType::kHallSensor);
-    // Initializes the settings for the drivetrain motors
 
+    // --- Lift Actuators ---
     leftLift.SetIdleMode(IdleMode::kBrake);
     rightLift.SetIdleMode(IdleMode::kBrake);
     leftLift.SetMotorType(MotorType::kBrushed);
     rightLift.SetMotorType(MotorType::kBrushed);
     leftLift.SetSensorType(SensorType::kEncoder);
     rightLift.SetSensorType(SensorType::kEncoder);
-    // Initializes the settings for the lift actuators
 
+    // --- Tilt Actuator ---
     tilt.SetIdleMode(IdleMode::kBrake);
     tilt.SetMotorType(MotorType::kBrushed);
     tilt.SetSensorType(SensorType::kEncoder);
-    // Initializes the settings for the tilt actuator
 
+    // --- Vibrator ---
     vibrator.SetIdleMode(IdleMode::kBrake);
     vibrator.SetMotorType(MotorType::kBrushed);
     vibrator.SetSensorType(SensorType::kEncoder);
-    // Initializes the settings fro the vibrator
 
+    // --- Inversion ---
     leftMotor.SetInverted(false);
     rightMotor.SetInverted(true);
     leftLift.SetInverted(true);
     rightLift.SetInverted(true);
     tilt.SetInverted(true);
     vibrator.SetInverted(true);
-    // Initializes the inverting status
 
+    // --- PID Settings ---
     leftMotor.SetP(0, 0.0002f);
     leftMotor.SetI(0, 0.0f);
     leftMotor.SetD(0, 0.0f);
     leftMotor.SetF(0, 0.00021f);
-    // PID settings for left motor
 
     rightMotor.SetP(0, 0.0002f);
     rightMotor.SetI(0, 0.0f);
     rightMotor.SetD(0, 0.0f);
     rightMotor.SetF(0, 0.00021f);
-    // PID settings for right motor
 
     leftLift.SetP(0, 1.51f);
     leftLift.SetI(0, 0.0f);
     leftLift.SetD(0, 0.0f);
     leftLift.SetF(0, 0.00021f);
-    // PID settings for left lift
 
     rightLift.SetP(0, 1.51f);
     rightLift.SetI(0, 0.0f);
     rightLift.SetD(0, 0.0f);
     rightLift.SetF(0, 0.00021f);
-    // PID settings for right lift
 
-    // PID settings for tilt
     tilt.SetP(0, 1.51f);
     tilt.SetI(0, 0.0f);
     tilt.SetD(0, 0.0f);
     tilt.SetF(0, 0.00021f);
-    // PID settings for tilt
 
+    // --- Burn Flash ---
     leftMotor.BurnFlash();
     rightMotor.BurnFlash();
     leftLift.BurnFlash();
     rightLift.BurnFlash();
     tilt.BurnFlash();
     vibrator.BurnFlash();
-    RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
-}
 
-    // Subscriber to joystick
+    RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
+
+    // --- Subscribers ---
     joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
         "/joy", 10,
         std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
@@ -167,14 +153,14 @@ private:
   // Motors
   SparkMax leftMotor;
   SparkMax rightMotor;
-  // Example for lifts and tilt
   SparkMax leftLift;
   SparkMax rightLift;
   SparkMax tilt;
+  SparkMax vibrator;
 
   // ROS 2 subscriptions and clients
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
-  rclcpp::Client<my_robot_pkg::srv::DigCommand>::SharedPtr excavation_client_;
+  rclcpp::Client<interfaces_pkg::srv::ExcavationRequest>::SharedPtr excavation_client_;
 
   // Controller joystick callback
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
@@ -200,7 +186,6 @@ private:
 
   float computeStepOutput(float value)
   {
-    // Example transformation (can be replaced with proper scaling)
     return value;
   }
 
@@ -212,14 +197,14 @@ private:
       return;
     }
 
-    auto dig_request = std::make_shared<my_robot_pkg::srv::DigCommand::Request>();
+    auto dig_request = std::make_shared<interfaces_pkg::srv::ExcavationRequest::Request>();
     dig_request->activate_digging = true;
 
     RCLCPP_INFO(this->get_logger(), "Sending excavation request");
 
     auto future_result = excavation_client_->async_send_request(
         dig_request,
-        [this](rclcpp::Client<my_robot_pkg::srv::DigCommand>::SharedFuture response)
+        [this](rclcpp::Client<interfaces_pkg::srv::ExcavationRequest>::SharedFuture response)
         {
           if (response.get()->accepted)
           {
@@ -231,6 +216,12 @@ private:
           }
         });
   }
+
+  // State flags
+  bool vibrator_active_;
+  bool prev_vibrator_button_;
+  bool alternate_mode_active_;
+  bool prev_alternate_button_;
 };
 
 int main(int argc, char **argv)
