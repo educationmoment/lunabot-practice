@@ -158,25 +158,23 @@ class ControllerNode : public rclcpp::Node
             vibrator.BurnFlash();
             RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
 
-        {
             //now we need to subscribe to joy so that we can recieve inputs from the contorller joystick
             joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
               "/joy", 10,
               std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1)
             );
             RCLCPP_INFO(this->get_logger(), "we got joy");
-            
-                //sends heartbeats to motors so they are acctually getting the joy input
-            try{
-                leftMotor.heartBeat();
-                rightMotor.heartBeat();
-                vibrator.heartBeat();
-                rightLift.heartBeat();
-                leftLift.heartBeat();
-                tilt.heartBeat();
-              }catch (const std::exception &e) {
-                RCLCPP_ERROR(this->get_logger(), "Exception in heartbeat: %s", e.what());
-              }
+            // Send initial heartbeats (catch exceptions if thrown)
+            try {
+              leftMotor.heartBeat();
+              rightMotor.heartBeat();
+              leftLift.heartBeat();
+              rightLift.heartBeat();
+              tilt.heartBeat();
+              vibrator.heartBeat();
+            } catch (const std::exception &e) {
+              RCLCPP_ERROR(this->get_logger(), "Exception in heartbeat: %s", e.what());
+            }
         }
 
 
@@ -203,6 +201,18 @@ private:
   //the function just acts on any input and doesn't need to return any values
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
+
+       //sends heartbeats to motors so they are acctually getting the joy input
+    try{
+        leftMotor.heartBeat();
+        rightMotor.heartBeat();
+        vibrator.heartBeat();
+        rightLift.heartBeat();
+        leftLift.heartBeat();
+        tilt.heartBeat();
+     }catch (const std::exception &e) {
+            RCLCPP_ERROR(this->get_logger(), "Exception in heartbeat: %s", e.what());
+     }  
     //get the vertical axis from each joystick stick
     //we are setting up for tank drive so each joystick only moves one side of the robot
     float left_y = msg->axes[Gp::_LEFT_VERTICAL_STICK];   // Left joystick controls left side
@@ -257,6 +267,7 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
+
 
 
 
