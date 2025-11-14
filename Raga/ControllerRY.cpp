@@ -231,6 +231,16 @@ rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joysubscriber;
 
 
     }
+
+int main(int argc, char **argv){
+  rclcpp::init(argc, argv);
+  std::string can_interface = "can0";
+  auto temp_node = std::make_shared<ControllerNode>(can_interface);
+  RCLCPP_INFO(temp_node->get_logger(), "started controller node");
+  rclcpp::spin(temp_node);
+  rclcpp::shutdown();
+  return 0;
+}
     
     //Logic is the same where if value is >1.0 -> set to 1.0 
     //else if value <-1.0 -> set to -1.0
