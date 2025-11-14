@@ -152,7 +152,7 @@ class ControllerNode : public rclcpp::Node
       RCLCPP_INFO(this->get_logger(), "Initializing Joy Subscription");
       joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
           "/joy", 10,
-          std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
+          std::bind(&ControllerNode::handle_drive_train, this, std::placeholders::_1));
       RCLCPP_INFO(this->get_logger(), "Joy Subscription Initialized");
   
       RCLCPP_INFO(this->get_logger(), "Initializing Heartbeat Publisher");
