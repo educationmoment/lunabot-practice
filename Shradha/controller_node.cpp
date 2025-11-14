@@ -178,10 +178,10 @@ private:
     rightMotor.SetDutyCycle(right_drive);
 
     // Heartbeat call to motors
-    leftMotor.HeartBeat();
-    rightMotor.HeartBeat();
-    leftLift.HeartBeat();
-    rightLift.HeartBeat();
+    leftMotor.Heartbeat();
+    rightMotor.Heartbeat();
+    leftLift.Heartbeat();
+    rightLift.Heartbeat();
   }
 
   float computeStepOutput(float value)
