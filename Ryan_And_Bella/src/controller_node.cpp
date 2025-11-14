@@ -211,7 +211,7 @@ class ControllerNode : public rclcpp::Node
       heartbeatPub->publish(msg);
     }
 
-}
+};
 
 
 
@@ -219,7 +219,7 @@ int main(int argc, char **argv){
   rclcpp::init(argc, argv);
   std::string can_interface = "can0";
   auto temp_node = std::make_shared<ControllerNode>(can_interface);
-  RCLCPP_INFO(this->get_logger(), "started controller node");
+  RCLCPP_INFO(temp_node->get_logger(), "started controller node");
   rclcpp::spin(temp_node);
   rclcpp::shutdown();
   return 0;
