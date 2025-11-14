@@ -162,7 +162,7 @@ namespace Gp
 
 
 
-  joy_msg->axes.size()
+joy_msg->axes.size()
 rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joysubscriber;
 
     {
