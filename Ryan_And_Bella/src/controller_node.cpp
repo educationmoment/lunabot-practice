@@ -178,14 +178,14 @@ class ControllerNode : public rclcpp::Node
       float right_lift = 0.0f;
       float lift_raw = 0.0f;
 
-      float leftJS = (joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK));
-      float rightJS = (joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK));
+      float leftJS = (joy_msg.axes[Gp::Axes::_LEFT_VERTICAL_STICK]);
+      float rightJS = (joy_msg.axes[Gp::Axes::_RIGHT_VERTICAL_STICK]);
 
       // keeps number between -1.0 and 1.0
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
       right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
 
-      float lift_trig = (joy_msg.axes(Gp::Axes::_LEFT_TRIGGER));
+      float lift_trig = (joy_msg.axes[Gp::Axes::_LEFT_TRIGGER]);
       // lift stuff
       lift_raw = std::max(0.0f, std::min(1.0f, lift_trig));
       
@@ -198,18 +198,18 @@ class ControllerNode : public rclcpp::Node
       leftLift.SetPosition(lift_raw);
       rightLift.SetPosition(lift_raw);
       
-      leftMotor.HeartBeat();
-      rightMotor.HeartBeat();
+      leftMotor.Heartbeat();
+      rightMotor.Heartbeat();
       leftLift.Heartbeat();
       rightLift.Heartbeat();
     }  
 
-    // void publish_heartbeat()
-    // {
-    //   auto msg = std_msgs::msg::String();
-    //   msg.data = "Heartbeat";
-    //   heartbeatPub->publish(msg);
-    // }
+    void publish_heartbeat()
+    {
+      auto msg = std_msgs::msg::String();
+      msg.data = "Heartbeat";
+      heartbeatPub->publish(msg);
+    }
 
 }
 
@@ -219,7 +219,7 @@ int main(int argc, char **argv){
   rclcpp::init(argc, argv);
   std::string can_interface = "can0";
   auto temp_node = std::make_shared<ControllerNode>(can_interface);
-  RCLCP_INFO(this->get_logger(), "started controller node");
+  RCLCPP_INFO(this->get_logger(), "started controller node");
   rclcpp::spin(temp_node);
   rclcpp::shutdown();
   return 0;
