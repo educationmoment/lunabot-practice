@@ -167,7 +167,7 @@ class ControllerNode: public rclcpp::Node  // ControllerNode inherits rclcpp::No
       // use left trigger for lift
       float leftJS = joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK);
       float rightJS = joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK);
-      lift_trigger = joy_msg->buttons(Gp::Buttons::_LEFT_TRIGGER);
+      lift_trigger = joy_msg.axes(Gp::Axes::_LEFT_TRIGGER);
 
       // make sure drive input is in between -1 and 1
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
