@@ -155,15 +155,6 @@ class ControllerNode : public rclcpp::Node
           std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
       RCLCPP_INFO(this->get_logger(), "Joy Subscription Initialized");
   
-      health_subscriber_ = this->create_subscription<interfaces_pkg::msg::MotorHealth>(
-          "/health_topic", 10,
-          std::bind(&ControllerNode::position_callback, this, std::placeholders::_1));
-  
-      RCLCPP_INFO(this->get_logger(), "Initializing depositing, excavation, and travel client");
-      depositing_client_ = (this->create_client<interfaces_pkg::srv::DepositingRequest>("depositing_service"));
-      excavation_client_ = (this->create_client<interfaces_pkg::srv::ExcavationRequest>("excavation_service"));
-      RCLCPP_INFO(this->get_logger(), "Excavation, depositing clients initialized");
-  
       RCLCPP_INFO(this->get_logger(), "Initializing Heartbeat Publisher");
       heartbeatPub = this->create_publisher<std_msgs::msg::String>("/heartbeat", 10);
       RCLCPP_INFO(this->get_logger(), "Heartbeat Publisher Initialized");
@@ -187,8 +178,8 @@ class ControllerNode : public rclcpp::Node
       float right_lift = 0.0f;
       float lift_raw = 0.0f;
 
-      float leftJS = -(joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK));
-      float rightJS = -(joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK));
+      float leftJS = (joy_msg.axes(Gp::Axes::_LEFT_VERTICAL_STICK));
+      float rightJS = (joy_msg.axes(Gp::Axes::_RIGHT_VERTICAL_STICK));
 
       // keeps number between -1.0 and 1.0
       left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
