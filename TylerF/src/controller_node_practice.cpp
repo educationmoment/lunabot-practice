@@ -28,83 +28,6 @@ enum CAN_IDs
     VIBRATOR = 6,
 };
 
-{
-    RCLCPP_INFO(this->get_logger(), "Begin Initializing Node");
-
-    RCLCPP_INFO(this->get_logger(), "Initializing Motor Controllers");
-
-    leftMotor.SetIdleMode(IdleMode::kBrake);
-    rightMotor.SetIdleMode(IdleMode::kBrake);
-    leftMotor.SetMotorType(MotorType::kBrushless);
-    rightMotor.SetMotorType(MotorType::kBrushless);
-    leftMotor.SetSensorType(SensorType::kHallSensor);
-    rightMotor.SetSensorType(SensorType::kHallSensor);
-    // Initializes the settings for the drivetrain motors
-
-    leftLift.SetIdleMode(IdleMode::kBrake);
-    rightLift.SetIdleMode(IdleMode::kBrake);
-    leftLift.SetMotorType(MotorType::kBrushed);
-    rightLift.SetMotorType(MotorType::kBrushed);
-    leftLift.SetSensorType(SensorType::kEncoder);
-    rightLift.SetSensorType(SensorType::kEncoder);
-    // Initializes the settings for the lift actuators
-
-    tilt.SetIdleMode(IdleMode::kBrake);
-    tilt.SetMotorType(MotorType::kBrushed);
-    tilt.SetSensorType(SensorType::kEncoder);
-    // Initializes the settings for the tilt actuator
-
-    vibrator.SetIdleMode(IdleMode::kBrake);
-    vibrator.SetMotorType(MotorType::kBrushed);
-    vibrator.SetSensorType(SensorType::kEncoder);
-    // Initializes the settings fro the vibrator
-
-    leftMotor.SetInverted(false);
-    rightMotor.SetInverted(true);
-    leftLift.SetInverted(true);
-    rightLift.SetInverted(true);
-    tilt.SetInverted(true);
-    vibrator.SetInverted(true);
-    // Initializes the inverting status
-
-    leftMotor.SetP(0, 0.0002f);
-    leftMotor.SetI(0, 0.0f);
-    leftMotor.SetD(0, 0.0f);
-    leftMotor.SetF(0, 0.00021f);
-    // PID settings for left motor
-
-    rightMotor.SetP(0, 0.0002f);
-    rightMotor.SetI(0, 0.0f);
-    rightMotor.SetD(0, 0.0f);
-    rightMotor.SetF(0, 0.00021f);
-    // PID settings for right motor
-
-    leftLift.SetP(0, 1.51f);
-    leftLift.SetI(0, 0.0f);
-    leftLift.SetD(0, 0.0f);
-    leftLift.SetF(0, 0.00021f);
-    // PID settings for left lift
-
-    rightLift.SetP(0, 1.51f);
-    rightLift.SetI(0, 0.0f);
-    rightLift.SetD(0, 0.0f);
-    rightLift.SetF(0, 0.00021f);
-    // PID settings for right lift
-
-    // PID settings for tilt
-    tilt.SetP(0, 1.51f);
-    tilt.SetI(0, 0.0f);
-    tilt.SetD(0, 0.0f);
-    tilt.SetF(0, 0.00021f);
-    // PID settings for tilt
-
-    leftMotor.BurnFlash();
-    rightMotor.BurnFlash();
-    leftLift.BurnFlash();
-    rightLift.BurnFlash();
-    tilt.BurnFlash();
-    vibrator.BurnFlash();
-    RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
 
 //this is giving us the controller input mapping so that we can identify each button pressed on the controller
 //gp = gamepad input
@@ -157,6 +80,84 @@ class ControllerNode : public rclcpp::Node
           vibrator(can_interface, VIBRATOR),
           //we want this false so that the vibrator isn't already running when we start the robot
           vibrator_active(false)
+          {
+            RCLCPP_INFO(this->get_logger(), "Begin Initializing Node");
+        
+            RCLCPP_INFO(this->get_logger(), "Initializing Motor Controllers");
+        
+            leftMotor.SetIdleMode(IdleMode::kBrake);
+            rightMotor.SetIdleMode(IdleMode::kBrake);
+            leftMotor.SetMotorType(MotorType::kBrushless);
+            rightMotor.SetMotorType(MotorType::kBrushless);
+            leftMotor.SetSensorType(SensorType::kHallSensor);
+            rightMotor.SetSensorType(SensorType::kHallSensor);
+            // Initializes the settings for the drivetrain motors
+        
+            leftLift.SetIdleMode(IdleMode::kBrake);
+            rightLift.SetIdleMode(IdleMode::kBrake);
+            leftLift.SetMotorType(MotorType::kBrushed);
+            rightLift.SetMotorType(MotorType::kBrushed);
+            leftLift.SetSensorType(SensorType::kEncoder);
+            rightLift.SetSensorType(SensorType::kEncoder);
+            // Initializes the settings for the lift actuators
+        
+            tilt.SetIdleMode(IdleMode::kBrake);
+            tilt.SetMotorType(MotorType::kBrushed);
+            tilt.SetSensorType(SensorType::kEncoder);
+            // Initializes the settings for the tilt actuator
+        
+            vibrator.SetIdleMode(IdleMode::kBrake);
+            vibrator.SetMotorType(MotorType::kBrushed);
+            vibrator.SetSensorType(SensorType::kEncoder);
+            // Initializes the settings fro the vibrator
+        
+            leftMotor.SetInverted(false);
+            rightMotor.SetInverted(true);
+            leftLift.SetInverted(true);
+            rightLift.SetInverted(true);
+            tilt.SetInverted(true);
+            vibrator.SetInverted(true);
+            // Initializes the inverting status
+        
+            leftMotor.SetP(0, 0.0002f);
+            leftMotor.SetI(0, 0.0f);
+            leftMotor.SetD(0, 0.0f);
+            leftMotor.SetF(0, 0.00021f);
+            // PID settings for left motor
+        
+            rightMotor.SetP(0, 0.0002f);
+            rightMotor.SetI(0, 0.0f);
+            rightMotor.SetD(0, 0.0f);
+            rightMotor.SetF(0, 0.00021f);
+            // PID settings for right motor
+        
+            leftLift.SetP(0, 1.51f);
+            leftLift.SetI(0, 0.0f);
+            leftLift.SetD(0, 0.0f);
+            leftLift.SetF(0, 0.00021f);
+            // PID settings for left lift
+        
+            rightLift.SetP(0, 1.51f);
+            rightLift.SetI(0, 0.0f);
+            rightLift.SetD(0, 0.0f);
+            rightLift.SetF(0, 0.00021f);
+            // PID settings for right lift
+        
+            // PID settings for tilt
+            tilt.SetP(0, 1.51f);
+            tilt.SetI(0, 0.0f);
+            tilt.SetD(0, 0.0f);
+            tilt.SetF(0, 0.00021f);
+            // PID settings for tilt
+        
+            leftMotor.BurnFlash();
+            rightMotor.BurnFlash();
+            leftLift.BurnFlash();
+            rightLift.BurnFlash();
+            tilt.BurnFlash();
+            vibrator.BurnFlash();
+            RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
+
         {
             //now we need to subscribe to joy so that we can recieve inputs from the contorller joystick
             joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
@@ -174,6 +175,8 @@ class ControllerNode : public rclcpp::Node
                 leftLift.heartBeat();
                 tilt.heartBeat();
               }catch (const std::exception &e) {
+                RCLCPP_ERROR(this->get_logger(), "Exception in heartbeat: %s", e.what());
+              }
         }
 
 
@@ -254,6 +257,7 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
+
 
 
 
