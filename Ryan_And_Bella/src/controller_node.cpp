@@ -204,8 +204,8 @@ class ControllerNode : public rclcpp::Node
 
       leftMotor.SetDutyCycle(left_drive);
       rightMotor.SetDutyCycle(right_drive);
-      leftLift.SetDutyCycle(lift_raw);
-      rightLift.SetDutyCycle(lift_raw);
+      leftLift.SetPosition(lift_raw);
+      rightLift.SetPosition(lift_raw);
       
       leftMotor.HeartBeat();
       rightMotor.HeartBeat();
