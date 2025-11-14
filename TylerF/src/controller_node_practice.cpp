@@ -95,7 +95,7 @@ class ControllerNode : public rclcpp::Node
                 rightLift.heartBeat();
                 leftLift.heartBeat();
                 tilt.heartBeat();
-              }
+              }catch (const std::exception &e) {
         }
 
 
@@ -176,6 +176,7 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
+
 
 
 
