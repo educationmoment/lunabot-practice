@@ -101,6 +101,7 @@ private:
 
   //bool = think boolean variable(true/flase)
   bool vibrator_active;  // toggles vibrator motor on/off
+  bool prev_vibrator_button = false; //need this for edge protection
 
   
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
@@ -125,8 +126,8 @@ private:
     float right_y = msg->axes[Gp::_RIGHT_VERTICAL_STICK]; // Right joystick controls right side
 
     //makes it so the robot isn't going at 100% the whole time. gives the joystick a range of values 
-    left_drive_raw = std::max(1.0f, std::min(-1.0f, left_y));
-    right_drive_raw = std::max(1.0f, std::min(-1.0f, right_y));
+    float left_drive_raw = std::max(-1.0f, std::min(1.0f, left_y));
+    float right_drive_raw = std::max(-1.0f, std::min(1.0f, right_y));
     
     //compute motor target velocities
     //this is a double and not a float because doubles are more accurate with more digits of precision 
@@ -139,12 +140,16 @@ private:
 
     //vibrator toggle (using right bumper button)
     //continuously checks if the right bumped is being pressed, and if it is pressed it updates the variable and toggles the vibrator
-    if (msg->buttons[Gp::_RIGHT_BUMPER])
+    bool current_vibrator = (msg->buttons[Gp::_RIGHT_BUMPER])
+    if (current_vibrator && !prev_vibrator_button)
     {
       vibrator_active = !vibrator_active;
       vibrator.SetDutyCycle(vibrator_active ? VIBRATOR_OUTPUT : 0.0f);
       RCLCPP_INFO(this->get_logger(), "Vibrator toggled %s", vibrator_active ? "ON" : "OFF");
     }
+
+    //this will ensure that the vibrator isn't continuously activated again and again more like a toggle
+    prev_vibrator_button = current_vibrator
 
     //will continuously update in the terminal every second with the % of each motor and if the vibrator is on
     RCLCPP_INFO_THROTTLE(
