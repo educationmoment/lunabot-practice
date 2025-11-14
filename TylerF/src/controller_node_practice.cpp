@@ -203,16 +203,13 @@ private:
   {
 
        //sends heartbeats to motors so they are acctually getting the joy input
-    try{
-        leftMotor.heartBeat();
-        rightMotor.heartBeat();
-        vibrator.heartBeat();
-        rightLift.heartBeat();
-        leftLift.heartBeat();
-        tilt.heartBeat();
-     }catch (const std::exception &e) {
-            RCLCPP_ERROR(this->get_logger(), "Exception in heartbeat: %s", e.what());
-     }  
+    leftMotor.heartBeat();
+    rightMotor.heartBeat();
+    vibrator.heartBeat();
+    rightLift.heartBeat();
+    leftLift.heartBeat();
+    tilt.heartBeat();
+    
     //get the vertical axis from each joystick stick
     //we are setting up for tank drive so each joystick only moves one side of the robot
     float left_y = msg->axes[Gp::_LEFT_VERTICAL_STICK];   // Left joystick controls left side
@@ -267,6 +264,7 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
+
 
 
 
