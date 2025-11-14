@@ -86,6 +86,16 @@ class ControllerNode : public rclcpp::Node
               std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1)
             );
             RCLCPP_INFO(this->get_logger(), "we got joy");
+            
+                //sends heartbeats to motors so they are acctually getting the joy input
+            try{
+                leftMotor.heartBeat();
+                rightMotor.heartBeat();
+                vibrator.heartBeat();
+                rightLift.heartBeat();
+                leftLift.heartBeat();
+                tilt.heartBeat();
+              }
         }
 
 
@@ -106,15 +116,7 @@ private:
   
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
 
-    //sends heartbeats to motors so they are acctually getting the joy input
-  try{
-    leftMotor.heartBeat();
-    rightMotor.heartBeat();
-    vibrator.heartBeat();
-    rightLift.heartBeat();
-    leftLift.heartBeat();
-    tilt.heartBeat();
-  }
+
     
   //we want to void the function because we don't want it to return anything back to ROS
   //the function just acts on any input and doesn't need to return any values
@@ -140,7 +142,7 @@ private:
 
     //vibrator toggle (using right bumper button)
     //continuously checks if the right bumped is being pressed, and if it is pressed it updates the variable and toggles the vibrator
-    bool current_vibrator = (msg->buttons[Gp::_RIGHT_BUMPER])
+    bool current_vibrator = (msg->buttons[Gp::_RIGHT_BUMPER]);
     if (current_vibrator && !prev_vibrator_button)
     {
       vibrator_active = !vibrator_active;
@@ -149,7 +151,7 @@ private:
     }
 
     //this will ensure that the vibrator isn't continuously activated again and again more like a toggle
-    prev_vibrator_button = current_vibrator
+    prev_vibrator_button = current_vibrator;
 
     //will continuously update in the terminal every second with the % of each motor and if the vibrator is on
     RCLCPP_INFO_THROTTLE(
@@ -174,6 +176,7 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
+
 
 
 
