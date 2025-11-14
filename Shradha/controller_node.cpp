@@ -116,6 +116,8 @@ private:
     // Heartbeat call to motors
     leftMotor.HeartBeat();
     rightMotor.HeartBeat();
+    leftLift.HeartBeat();
+    rightLift.HeartBeat();
   }
 
   float computeStepOutput(float value)
