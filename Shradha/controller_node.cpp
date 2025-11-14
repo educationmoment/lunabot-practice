@@ -3,7 +3,9 @@
 #include <string>
 #include <cstdlib>
 #include <algorithm>
-#include "rclcpp/rclcpp.hpp" //added a library here
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/joy.hpp" // ROS 2 joystick message
+#include "my_robot_pkg/srv/dig_command.hpp" // Your custom service
 
 const float VELOCITY_MAX = 2500.0;  // rpm, after gearbox turns into 11.1 RPM
 
@@ -17,19 +19,19 @@ namespace Gp
 {
   enum Buttons
   {
-    _A = 0,             // Excavation Autonomy
-    _B = 1,             // Stop Automation
-    _X = 2,             // Excavation Reset
-    _Y = 3,             // Deposit Autonomy
-    _LEFT_BUMPER = 4,   // Alternate between control modes
-    _RIGHT_BUMPER = 5,  // Vibration Toggle
-    _LEFT_TRIGGER = 6,  // Safety Trigger
-    _RIGHT_TRIGGER = 7, // Safety Trigger
-    _WINDOW_KEY = 8,    // Button 8 /** I do not know what else to call this key */
-    _D_PAD_UP = 12,     // Lift Actuator UP
-    _D_PAD_DOWN = 13,   // Lift Actuator DOWN
-    _D_PAD_LEFT = 14,   // Tilt Actuator Up   /** CHECK THESE */
-    _D_PAD_RIGHT = 15,  // Tilt Actuator Down /** CHECK THESE */
+    _A = 0,
+    _B = 1,
+    _X = 2,
+    _Y = 3,
+    _LEFT_BUMPER = 4,
+    _RIGHT_BUMPER = 5,
+    _LEFT_TRIGGER = 6,
+    _RIGHT_TRIGGER = 7,
+    _WINDOW_KEY = 8,
+    _D_PAD_UP = 12,
+    _D_PAD_DOWN = 13,
+    _D_PAD_LEFT = 14,
+    _D_PAD_RIGHT = 15,
     _X_BOX_KEY = 16
   };
 
@@ -44,182 +46,122 @@ namespace Gp
 
 class ControllerNode : public rclcpp::Node
 {
-  public:
-
+public:
   ControllerNode(const std::string &can_interface)
-  : Node("controller_node"),
-    leftMotor(can_interface, LEFT_MOTOR),
-    rightMotor(can_interface, RIGHT_MOTOR)
-    {
-      RCLCPP_INFO(this.get_logger(), "beginnign node...")
-      RCLCPP_INFO(this.get_logger(), "configuring motor controllers..")
+      : Node("controller_node"),
+        leftMotor(can_interface, LEFT_MOTOR),
+        rightMotor(can_interface, RIGHT_MOTOR)
+  {
+    RCLCPP_INFO(this->get_logger(), "Beginning node...");
+    RCLCPP_INFO(this->get_logger(), "Configuring motor controllers...");
 
-      leftMotor.SetIdleMode(IdleMode::kBrake);
-      rightMotor.SetIdleMode(IdleMode::kBrake);
-      leftMotor.SetMotorType(MotorType::kBrushless);
-      rightMotor.SetMotorType(MotorType::kBrushless);
+    // Motor setup
+    leftMotor.SetIdleMode(IdleMode::kBrake);
+    rightMotor.SetIdleMode(IdleMode::kBrake);
+    leftMotor.SetMotorType(MotorType::kBrushless);
+    rightMotor.SetMotorType(MotorType::kBrushless);
 
+    // Left motor PID
     leftMotor.SetP(0, 0.0002f);
     leftMotor.SetI(0, 0.0f);
     leftMotor.SetD(0, 0.0f);
     leftMotor.SetF(0, 0.00021f);
-    // PID settings for left motor
 
+    // Right motor PID
     rightMotor.SetP(0, 0.0002f);
     rightMotor.SetI(0, 0.0f);
     rightMotor.SetD(0, 0.0f);
     rightMotor.SetF(0, 0.00021f);
-    // PID settings for right motor
 
-    leftLift.SetP(0, 1.51f);
-    leftLift.SetI(0, 0.0f);
-    leftLift.SetD(0, 0.0f);
-    leftLift.SetF(0, 0.00021f);
-    // PID settings for left lift
+    // Burn settings to flash
+    leftMotor.BurnFlash();
+    rightMotor.BurnFlash();
 
-    rightLift.SetP(0, 1.51f);
-    rightLift.SetI(0, 0.0f);
-    rightLift.SetD(0, 0.0f);
-    rightLift.SetF(0, 0.00021f);
-    // PID settings for right lift
-
-    // PID settings for tilt
-    tilt.SetP(0, 1.51f);
-    tilt.SetI(0, 0.0f);
-    tilt.SetD(0, 0.0f);
-    tilt.SetF(0, 0.00021f);
-
-
-
-
-    // finish configuring
-    leftMotor.Burnflash()
-    rightMotor.BurnFlash()
-
-
-    }
-    //rostopic
-    // /joy
-    // /controller_node
-    {
-      joy_subscriber_ = this.create_subscription<general_msgs::msg::Joy>(
+    // Subscriber to joystick
+    joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
         "/joy", 10,
-        std::bind::(&ControllerNode::joy_callback, this, std::placeholders::_1));
-        RCLCP_INFO(this.get_logger(), "we got joy!");
+        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
 
-      
-    }
-    // request 
-    
-    void send_dig_command()
+    RCLCPP_INFO(this->get_logger(), "Joystick subscriber initialized");
+  }
+
+private:
+  // Motors
+  SparkMax leftMotor;
+  SparkMax rightMotor;
+  // Example for lifts and tilt
+  SparkMax leftLift;
+  SparkMax rightLift;
+  SparkMax tilt;
+
+  // ROS 2 subscriptions and clients
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
+  rclcpp::Client<my_robot_pkg::srv::DigCommand>::SharedPtr excavation_client_;
+
+  // Controller joystick callback
+  void joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
+  {
+    float leftJS = -joy_msg->axes[Gp::Axes::_LEFT_VERTICAL_STICK];
+    float rightJS = -joy_msg->axes[Gp::Axes::_RIGHT_VERTICAL_STICK];
+
+    float left_drive_raw = std::clamp(leftJS, -1.0f, 1.0f);
+    float right_drive_raw = std::clamp(rightJS, -1.0f, 1.0f);
+
+    float left_drive = computeStepOutput(left_drive_raw);
+    float right_drive = computeStepOutput(right_drive_raw);
+
+    leftMotor.SetDutyCycle(left_drive);
+    rightMotor.SetDutyCycle(right_drive);
+
+    // Heartbeat call to motors
+    leftMotor.HeartBeat();
+    rightMotor.HeartBeat();
+  }
+
+  float computeStepOutput(float value)
+  {
+    // Example transformation (can be replaced with proper scaling)
+    return value;
+  }
+
+  void send_dig_command()
+  {
+    if (!excavation_client_)
     {
-      if(!excavation_client_){
-        RCLPP_WARN(this->get_logger(), "Can't find excavation");
-        return; //returns nothign if you cannot excavate
-      }
+      RCLCPP_WARN(this->get_logger(), "Can't find excavation client");
+      return;
+    }
 
-      auto dig_request = std::make_shared<my_robot_pkg::srv::DigCommand::Request>();
-      dig_request->activate_digging = true;
+    auto dig_request = std::make_shared<my_robot_pkg::srv::DigCommand::Request>();
+    dig_request->activate_digging = true;
 
-      //Log that we're sending dig request
-      RCLCPP_INFO(this->get_logger(), "Sending excavation request");
+    RCLCPP_INFO(this->get_logger(), "Sending excavation request");
 
-
-      //send the request asynchronously
-      auto future_result = dig_client->async_send_request(
+    auto future_result = excavation_client_->async_send_request(
         dig_request,
         [this](rclcpp::Client<my_robot_pkg::srv::DigCommand>::SharedFuture response)
         {
-          if(response.get()->accepted)
+          if (response.get()->accepted)
           {
             RCLCPP_INFO(this->get_logger(), "Digging successful");
           }
           else
           {
-            RCLCPP_WARN(this->get_logger(), "Digging was rejected by the server");
+            RCLCPP_WARN(this->get_logger(), "Digging rejected by server");
           }
-        }  
-      )
-    }
-
-    // drivetrain
-
-    {
-      float left_drive = 0.0
-      float right_drive = 0.0
-      float left_drive_raw = 0.0
-      float right_drive_raw = 0.0
-
-
-
-      //initializing joysticks
-      float leftJS = -joy_msg.axes[Gp::Axes::_LEFT_VERTICAL_STICK];
-      float rightJS = -joy_msg.axes[Gp::Axes::_RIGHT_VERTICAL_STICK];
-
-
-      //I created if else statements instead
-      /*left_drive_raw = std::max(-1.0f, std::min(1.0f, leftJS));
-      right_drive_raw = std::max(-1.0f, std::min(1.0f, rightJS));
-      */
-
-
-      float getJoyStickMax(){
-        return joy_msg->axes.size(); //raw data on how much the axes is being moved 
-      } 
-
-      float maxLimit = getJoyStickMax(); //could read from config file
-
-
-      //for left joystick
-      if(leftJS > 1.0f){
-        left_drive_raw = -1.0f;
-      }
-      else if (leftJS < -1.0f){
-        left_drive_raw = 1.0f;
-      }
-      else{
-        left_drive_raw = getJoyStickMax();
-      }
-
-
-      //for right joy stick
-      if(rightJS > 1.0f){ //these if statements are essentially creating bounds. cannot be above 1.0 or below -1.0
-        right_draw_raw = -1.0f;
-      }
-      else if (rightJS < -1.0f){
-        right_draw_raw = 1.0f;
-      }
-      else{
-        right_draw_raw = getJoyStickMax(); //default is fine
-      }
-
-      left_drive = computeStepOutput(left_drive_raw);
-      right_drive = computeStepOutput(right_drive_raw);
-
-      leftMotor.SetDutyCycle(left_drive); //always has to be last thing in drive chain
-      rightMotor.SetDutyCycle(right_drive);
-      
-      while(rclpp:ok()){ //the condiition comes from ROS 2 from the rclpp C++ library as long as node runs
-        leftMotor.HeartBeat();
-        rightMotor.HeartBeat();
-      }
-
-
-    }
-
-
-    
-
-
-}
+        });
+  }
+};
 
 int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
+
   std::string can_interface = "can0";
   auto temp_node = rclcpp::Node::make_shared("controller_param_node");
   temp_node->declare_parameter<std::string>("can_interface", "can0");
   temp_node->get_parameter("can_interface", can_interface);
+
   auto node = std::make_shared<ControllerNode>(can_interface);
   rclcpp::spin(node);
   rclcpp::shutdown();
