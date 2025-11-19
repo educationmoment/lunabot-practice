@@ -7,7 +7,7 @@ const float VIBRATOR_DUTY = 1.0f;
 const float ERROR = 0.1f;
 float buffer = 0.0f;
 
-SparkMax leftDrive("can0", 1);
+SparkMax leftDrive("can0", 1); //
 SparkMax rightDrive("can0", 2);
 SparkMax leftLift("can0", 3);
 SparkMax rightLift("can0", 4);
