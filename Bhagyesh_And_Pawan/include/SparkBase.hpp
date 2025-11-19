@@ -43,7 +43,7 @@
 
 constexpr uint8_t PARAM_TYPE_UINT = 0x01;  ///< Parameter type for unsigned integers
 constexpr uint8_t PARAM_TYPE_FLOAT = 0x02; ///< Parameter type for floating-point numbers
-constexpr uint8_t PARAM_TYPE_BOOL = 0x03;  ///< Parameter type for boolean values
+constexpr uint8_t PARAM_TYPE_BOOL = 0x03;  ///< Parameter type for boolean value
 
 /**
  * @brief API commands for the SPARK controller

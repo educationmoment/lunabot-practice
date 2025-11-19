@@ -65,8 +65,8 @@ void MoveBucket (float lift_setpoint, float tilt_setpoint, bool activate_vibrato
 }
 
 /**
- * @param health_msg interfaces_pkg::msg::MotorHealth, tilt_position read from node and stored in buffer
- * @returns Nonem
+ * @param health_msg interfaces_pkg::msg::MotorHealth, tilt_position read from node and stored in buffers
+ * @returns None
  */
 void updateTiltPosition(const interfaces_pkg::msg::MotorHealth::SharedPtr health_msg){
     buffer = health_msg->tilt_position;

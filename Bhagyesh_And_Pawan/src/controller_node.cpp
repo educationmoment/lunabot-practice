@@ -21,7 +21,7 @@ namespace Gp
   enum Buttons
   {
     _A = 0,             // Excavation Autonomy
-    _B = 1,             // Stop Automation
+    _B = 1,             // Stop Automations
     _X = 2,             // Excavation Reset
     _Y = 3,             // Deposit Autonomy
     _LEFT_BUMPER = 4,   // Alternate between control modes
