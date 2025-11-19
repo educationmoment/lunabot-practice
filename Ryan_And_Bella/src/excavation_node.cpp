@@ -54,3 +54,30 @@ void MoveBucket (float lift_setpoint, float tilt_setpoint, bool activate_vibrato
         tiltReached = (fabs(tilt_setpoint - tilt.GetPosition() ) <=  ERROR); //Updates statuses
     }
 }
+
+auto dig_timer1 = std::chrono::high_resolution_clock::now();
+while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - digtimer1).count() < 2){
+    leftdrive.SetVelocity(1500.0f);
+    rightdrive.SetVelocity(1500.0f);
+    vibrator.SetDutyCycle(VIBRATOR_DUTY);
+    MoveBucket(-3.6, -3.5 + buffer, true, 1500);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    
+}
+
+int main(int argc, char **argv) {
+    rclcpp::init(argc, argv); 
+
+    node = rclcpp::Node::make_shared("excavation_node");
+
+    rclcpp::Service<interfaces_pkg::srv::ExcavationRequest>::SharedPtr service =
+    node->create_service<interfaces_pkg::srv::ExcavationRequest>("excavation_service", &Excavate);
+
+    health_subscriber_ = node->create_subscription<interfaces_pkg::msg::MotorHealth>(
+    "/health_topic", 10, updateTiltPosition);
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Excavation Initalized");
+
+    rclcpp::spin(node);
+    rclcpp::shutdown();
+}
