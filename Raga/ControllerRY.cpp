@@ -1,4 +1,6 @@
 #include "SparkMax.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/joy.hpp"
 #include <cmath>
 #include <string>
 #include <cstdlib>
@@ -9,26 +11,26 @@ const float VELOCITY_MAX = 2500.0;  // rpm, after gearbox turns into 11.1 RPM
 enum CAN_IDs
 {
   LEFT_MOTOR = 1,
-  RIGHT_MOTOR = 2,
+  RIGHT_MOTOR = 2
 };
 
 namespace Gp
 {
   enum Buttons
   {
-    _A = 0,             // Excavation Autonomy
-    _B = 1,             // Stop Automation
-    _X = 2,             // Excavation Reset
-    _Y = 3,             // Deposit Autonomy
-    _LEFT_BUMPER = 4,   // Alternate between control modes
-    _RIGHT_BUMPER = 5,  // Vibration Toggle
-    _LEFT_TRIGGER = 6,  // Safety Trigger
-    _RIGHT_TRIGGER = 7, // Safety Trigger
-    _WINDOW_KEY = 8,    // Button 8 /** I do not know what else to call this key */
-    _D_PAD_UP = 12,     // Lift Actuator UP
-    _D_PAD_DOWN = 13,   // Lift Actuator DOWN
-    _D_PAD_LEFT = 14,   // Tilt Actuator Up   /** CHECK THESE */
-    _D_PAD_RIGHT = 15,  // Tilt Actuator Down /** CHECK THESE */
+    _A = 0,
+    _B = 1,
+    _X = 2,
+    _Y = 3,
+    _LEFT_BUMPER = 4,
+    _RIGHT_BUMPER = 5,
+    _LEFT_TRIGGER = 6,
+    _RIGHT_TRIGGER = 7,
+    _WINDOW_KEY = 8,
+    _D_PAD_UP = 12,
+    _D_PAD_DOWN = 13,
+    _D_PAD_LEFT = 14,
+    _D_PAD_RIGHT = 15,
     _X_BOX_KEY = 16
   };
 
@@ -41,20 +43,16 @@ namespace Gp
   };
 }
 
- ControllerNode(const std::string &can_interface)
-      : Node("controller_node"),
-        leftMotor(can_interface, LEFT_MOTOR),
-        rightMotor(can_interface, RIGHT_MOTOR),
-        leftLift(can_interface, LEFT_LIFT),
-        rightLift(can_interface, RIGHT_LIFT),
-        tilt(can_interface, TILT),
-        vibrator(can_interface, VIBRATOR),
-        vibrator_active_(false),
-        prev_vibrator_button_(false),
-        alternate_mode_active_(false),
-        prev_alternate_button_(false)
+class ControllerNode : public rclcpp::Node
+{
+public:
+  ControllerNode(const std::string &can_interface) : Node("controller_node")
   {
-    RCLCPP_INFO(this->get_logger(), "Begin Initializing Node");
+    // Initialize motors
+    leftMotor = SparkMax(can_interface, LEFT_MOTOR);
+    rightMotor = SparkMax(can_interface, RIGHT_MOTOR);
+    leftLift = SparkMax(can_interface, LEFT_MOTOR + 2);
+    rightLift = SparkMax(can_interface, RIGHT_MOTOR + 2);
 
     RCLCPP_INFO(this->get_logger(), "Initializing Motor Controllers");
 
@@ -64,7 +62,9 @@ namespace Gp
     rightMotor.SetMotorType(MotorType::kBrushless);
     leftMotor.SetSensorType(SensorType::kHallSensor);
     rightMotor.SetSensorType(SensorType::kHallSensor);
-    // Initializes the settings for the drivetrain motors
+
+    leftMotor.SetInverted(false);
+    rightMotor.SetInverted(true);
 
     leftLift.SetIdleMode(IdleMode::kBrake);
     rightLift.SetIdleMode(IdleMode::kBrake);
@@ -72,180 +72,115 @@ namespace Gp
     rightLift.SetMotorType(MotorType::kBrushed);
     leftLift.SetSensorType(SensorType::kEncoder);
     rightLift.SetSensorType(SensorType::kEncoder);
-    // Initializes the settings for the lift actuators
-
-    tilt.SetIdleMode(IdleMode::kBrake);
-    tilt.SetMotorType(MotorType::kBrushed);
-    tilt.SetSensorType(SensorType::kEncoder);
-    // Initializes the settings for the tilt actuator
-
-    vibrator.SetIdleMode(IdleMode::kBrake);
-    vibrator.SetMotorType(MotorType::kBrushed);
-    vibrator.SetSensorType(SensorType::kEncoder);
-    // Initializes the settings fro the vibrator
-
-    leftMotor.SetInverted(false);
-    rightMotor.SetInverted(true);
-    leftLift.SetInverted(true);
-    rightLift.SetInverted(true);
-    tilt.SetInverted(true);
-    vibrator.SetInverted(true);
-    // Initializes the inverting status
 
     leftMotor.SetP(0, 0.0002f);
     leftMotor.SetI(0, 0.0f);
     leftMotor.SetD(0, 0.0f);
     leftMotor.SetF(0, 0.00021f);
-    // PID settings for left motor
 
     rightMotor.SetP(0, 0.0002f);
     rightMotor.SetI(0, 0.0f);
     rightMotor.SetD(0, 0.0f);
     rightMotor.SetF(0, 0.00021f);
-    // PID settings for right motor
-
-    leftLift.SetP(0, 1.51f);
-    leftLift.SetI(0, 0.0f);
-    leftLift.SetD(0, 0.0f);
-    leftLift.SetF(0, 0.00021f);
-    // PID settings for left lift
-
-    rightLift.SetP(0, 1.51f);
-    rightLift.SetI(0, 0.0f);
-    rightLift.SetD(0, 0.0f);
-    rightLift.SetF(0, 0.00021f);
-    // PID settings for right lift
-
-    // PID settings for tilt
-    tilt.SetP(0, 1.51f);
-    tilt.SetI(0, 0.0f);
-    tilt.SetD(0, 0.0f);
-    tilt.SetF(0, 0.00021f);
-    // PID settings for tilt
 
     leftMotor.BurnFlash();
     rightMotor.BurnFlash();
     leftLift.BurnFlash();
     rightLift.BurnFlash();
-    tilt.BurnFlash();
-    vibrator.BurnFlash();
+
     RCLCPP_INFO(this->get_logger(), "Motor Controllers Initialized");
 
-    // ---ROS SUBSCRIPTIONS--- //
     RCLCPP_INFO(this->get_logger(), "Initializing Joy Subscription");
     joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
-        "/joy", 10,
-        std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
+      "/joy", 10,
+      std::bind(&ControllerNode::joy_callback, this, std::placeholders::_1));
     RCLCPP_INFO(this->get_logger(), "Joy Subscription Initialized");
+  }
 
-    health_subscriber_ = this->create_subscription<interfaces_pkg::msg::MotorHealth>(
-        "/health_topic", 10,
-        std::bind(&ControllerNode::position_callback, this, std::placeholders::_1));
+private:
+  SparkMax leftMotor;
+  SparkMax rightMotor;
+  SparkMax leftLift;
+  SparkMax rightLift;
 
-    RCLCPP_INFO(this->get_logger(), "Initializing depositing, excavation, and travel client");
-    depositing_client_ = (this->create_client<interfaces_pkg::srv::DepositingRequest>("depositing_service"));
-    excavation_client_ = (this->create_client<interfaces_pkg::srv::ExcavationRequest>("excavation_service"));
-    RCLCPP_INFO(this->get_logger(), "Excavation, depositing clients initialized");
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
 
-    RCLCPP_INFO(this->get_logger(), "Initializing Heartbeat Publisher");
-    heartbeatPub = this->create_publisher<std_msgs::msg::String>("/heartbeat", 10);
-    RCLCPP_INFO(this->get_logger(), "Heartbeat Publisher Initialized");
+  float computeStepOutput(float value)
+  {
+    // [-1, 1]
+    if (value > 1.0f) value = 1.0f;
+    if (value < -1.0f) value = -1.0f;
 
-    RCLCPP_INFO(this->get_logger(), "Initializing Timer");
-    timer = this->create_wall_timer(
-        std::chrono::milliseconds(1000),
-        std::bind(&ControllerNode::publish_heartbeat, this));
-    RCLCPP_INFO(this->get_logger(), "Timer Initialized");
+    //   steps: 0, 0.25, 0.5, 0.75, 1.0
+    float stepSize = 0.25f;
+    float sign = (value >= 0.0f) ? 1.0f : -1.0f;
+    float absVal = std::fabs(value);
 
-    RCLCPP_INFO(this->get_logger(), "Node Initialization Complete");
+    // Round to nearest step
+    int step = static_cast<int>(std::round(absVal / stepSize));
+    return step * stepSize * sign;
   }
 
 
 
-joy_msg->axes.size()
-rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joysubscriber;
+  // JOY CALLBACK
+  void joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
+  {
+    float left_joystick = -joy_msg->axes[Gp::Axes::_LEFT_VERTICAL_STICK];
+    float right_joystick = -joy_msg->axes[Gp::Axes::_RIGHT_VERTICAL_STICK];
+    float lift_trigger = joy_msg->axes[Gp::Axes::_LEFT_TRIGGER]; 
 
-    {
-      joy_subscriber_ = this.create_subscription<general_msgs::msg::Joy>(
-        "/joy", 10,
-        std::bind::(&ControllerNode::joy_callback, this, std::placeholders::_1));
-        RCLCP_INFO(this.get_logger(), "we got joy!");
+    // ------------ LEFT MOTOR ------------
+    float left_processed = 0.0f;
+    if (left_joystick > 1.0f)
+        left_processed = 1.0f;
+    else if (left_joystick < -1.0f)
+        left_processed = -1.0f;
+    else
+        left_processed = left_joystick;
 
-      
-    }
-    // request 
+    left_processed = computeStepOutput(left_processed);
 
-    {
-      void send_excavation_request()
-      {
-        if (!excavation_client_)
-          {
-            RCLCP_INFO(this.get_logger(), "cant find excvation");
-            return;
-          }
-        auto request = std::make_shared<controller_pkg::srv::ExcavationRequest::Request>();
-        request.start_excavation = true;
-        RCLCP_INFO(this.get_logger(), "we got excavation");
+    // ------------ RIGHT MOTOR ------------
+    float right_processed = 0.0f;
+    if (right_joystick > 1.0f)
+        right_processed = 1.0f;
+    else if (right_joystick < -1.0f)
+        right_processed = -1.0f;
+    else
+        right_processed = right_joystick;
 
-      }
-    }
-    // drivetrain
+    right_processed = computeStepOutput(right_processed);
 
-    private:
-        SparkMax leftMotor;
-        SparkMax rightMotor;
+    // Set drive motors
+    leftMotor.SetDutyCycle(left_processed);
+    rightMotor.SetDutyCycle(right_processed);
 
-
-
-    {
-      
-      float left_joystick = -joy_msg.axes[Gp::Axes::_LEFT_VERTICAL_STICK];
-      float right_joystick = -joy_msg.axes[Gp::Axes::_RIGHT_VERTICAL_STICK];
-
-      //Left Motor
-      float left_processed = 0.0f;
-        if(left_joystick > 1.0f) 
-            left_processed = 1.0f;
-        else if (left_joystick < -1.0f) 
-            left_processed = -1.0f;
-        else 
-            left_processed = left_joystick;
-        left_processed = computeStepOutput(left_processed);
-
-      //Right Motor
-      float right_processed = 0.0f;
-        if(right_joystick > 1.0f) 
-            right_processed = 1.0f;
-        else if (right_joystick < -1.0f) 
-            right_processed = -1.0f;
-        else 
-            right_processed = right_joystick;
-        right_processed = computeStepOutput(right_processed);
+    // --- Lift control-left trigger ---
+    float lift_duty = (lift_trigger + 1.0f) / 2.0f;
+    lift_duty = std::clamp(lift_duty, 0.0f, 1.0f);
+    leftLift.SetDutyCycle(lift_duty);
+    rightLift.SetDutyCycle(lift_duty);
 
 
-        leftMotor.SetDutyCycle(left_processed);
-        rightMotor.SetDutyCycle(right_processed);
+    leftMotor.Heartbeat();
+    rightMotor.Heartbeat();
+    leftLift.Heartbeat();
+    rightLift.Heartbeat();
+  }
 
-        leftMotor.HeartBeat();
-        rightMotor.HeartBeat();
+};
 
 
-    }
-
-int main(int argc, char **argv){
+int main(int argc, char **argv)
+{
   rclcpp::init(argc, argv);
   std::string can_interface = "can0";
-  auto temp_node = std::make_shared<ControllerNode>(can_interface);
-  RCLCPP_INFO(temp_node->get_logger(), "started controller node");
-  rclcpp::spin(temp_node);
+  auto temp_node = rclcpp::Node::make_shared("controller_param_node");
+  temp_node->declare_parameter<std::string>("can_interface", "can0");
+  temp_node->get_parameter("can_interface", can_interface);
+  auto node = std::make_shared<ControllerNode>(can_interface);
+  rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
 }
-    
-    //Logic is the same where if value is >1.0 -> set to 1.0 
-    //else if value <-1.0 -> set to -1.0
-    //else you keep the original value ( cant tell if its basically between -1.0 and 1.0)
-
-
-
-
