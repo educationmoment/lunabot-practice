@@ -5,14 +5,12 @@
 #include <algorithm>
 #include <string>
 
-// Motor configuration
-const int LEFT_ID  = 1;
+//Can IDs
+const int LEFT_ID = 1;
 const int RIGHT_ID = 2;
-
-// Actuator CAN IDs (UPDATE IF NEEDED)
-const int LEFT_LIFT  = 3;
+const int LEFT_LIFT = 3;
 const int RIGHT_LIFT = 4;
-const int TILT       = 5;
+const int TILT = 5;
 
 const float DEADZONE = 0.1f;
 
@@ -25,7 +23,7 @@ namespace Gp
         _B = 1,
         _X = 2,
         _Y = 3,
-        _LEFT_BUMPER  = 4,
+        _LEFT_BUMPER = 4,
         _RIGHT_BUMPER = 5,
         _LEFT_TRIGGER = 6,
         _RIGHT_TRIGGER = 7,
@@ -40,9 +38,9 @@ namespace Gp
     enum Axes
     {
         _LEFT_HORIZONTAL_STICK = 0,
-        _LEFT_VERTICAL_STICK   = 1,
+        _LEFT_VERTICAL_STICK = 1,
         _RIGHT_HORIZONTAL_STICK = 2,
-        _RIGHT_VERTICAL_STICK   = 3,
+        _RIGHT_VERTICAL_STICK = 3,
     };
 }
 
