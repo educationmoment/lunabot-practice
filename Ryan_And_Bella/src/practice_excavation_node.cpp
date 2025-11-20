@@ -19,7 +19,49 @@ std::shared_ptr<rclcpp::Node> node;
 
 void MoveBucket (float lift_setpoint, float tilt_setpoint, bool activate_vibrator, float drive_speed)
 {
+    auto timer_start = std::chrono::high_resolution_clock::now();
+    bool leftLiftReached = (fabs(lift_setpoint - leftLift.GetPosition()) ==  0.0f);
+    bool rightLiftReached = (fabs(lift_setpoint - rightLift.GetPosition()) == 0.0f);
+    bool tiltReached = (fabs(tilt_setpoint - tilt.GetPosition()) ==  0.0f);
 
+    while (!((leftLiftReached && rightLiftReached) && tiltReached))
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+        if (fabs(leftLift.GetPosition() - rightLift.GetPosition()) >= ERROR){
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "WARNING: ACTUATORS MISALIGNED. READJUSTING . . .");
+            
+            if (fabs(lift_setpoint - leftLift.GetPosition()) < fabs(lift_setpoint - rightLift.GetPosition()))
+            {
+                rightLift.SetPosition(leftLift.GetPosition());
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "ACTUATORS READJUSTED");
+            }
+            else
+            {
+                leftLift.SetPosition(rightLift.GetPosition());
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "ACTUATORS READJUSTED");
+            }
+        }
+        else {
+            leftLift.SetPosition(lift_setpoint);
+            rightLift.SetPosition(lift_setpoint);
+            tilt.SetPosition(tilt_setpoint);
+        }
+
+        if (activate_vibrator) vibrator.SetDutyCycle(VIBRATOR_DUTY);
+
+        leftDrive.SetVelocity(drive_speed);
+        rightDrive.SetVelocity(drive_speed);
+
+        if (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - timer_start).count() > 5) {
+            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Skipping stage...");
+            break;
+        } //Timer for when to quit a stage due to timeout
+
+        leftLiftReached = (fabs(lift_setpoint - leftLift.GetPosition() ) <=  0.0f);
+        rightLiftReached = (fabs(lift_setpoint - rightLift.GetPosition() ) <=  0.0f);
+        tiltReached = (fabs(tilt_setpoint - tilt.GetPosition() ) <=  0.0f);
+    }
 }
 
 void updateTiltPosition(const interfaces_pkg::msg::MotorHealth::SharedPtr health_msg){
