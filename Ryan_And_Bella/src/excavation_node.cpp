@@ -96,7 +96,13 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
-        MoveBucket(0.0, 0.0 + buffer, false, 0.0f); //Resets bucket
+
+        leftDrive.SetDutyCycle(0.0f);
+        rightDrive.SetDutyCycle(0.0f);
+        vibrator.SetDutyCycle(0.0f);
+
+        MoveBucket(0.0, 0.0 + buffer, false, 0.0f);
+        response->excavation_successful = true;
 
 }
 
