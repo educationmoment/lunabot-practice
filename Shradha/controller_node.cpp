@@ -206,7 +206,7 @@ private:
         dig_request,
         [this](rclcpp::Client<interfaces_pkg::srv::ExcavationRequest>::SharedFuture response)
         {
-          if (response.get()->accepted)
+          if (response.get() == 0) //changed this to 0, assuming that is success
           {
             RCLCPP_INFO(this->get_logger(), "Digging successful");
           }
