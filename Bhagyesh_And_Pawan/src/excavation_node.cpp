@@ -115,24 +115,28 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
 
  
         // Stage 1 – Approach pose
- 
+        // MoveBucket (float lift_setpoint, float tilt_setpoint, bool activate_vibrator, float drive_speed)
         // We want the bucket just above the surface before we start cutting.
         // Assumption (from previous tuning):
-        //     lift ≈ -2.5, tilt ≈ -2.6 + buffer => bucket edge near the surface,
+        //     lift ≈ -2.5, 
+        //     tilt ≈ -2.6 + buffer => bucket edge near the surface,
         //     with a small nose-down attitude.
-        //
+        
         MoveBucket(-2.5f, -2.6f + buffer, false, 0.0f);
+    
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Stage 1 complete: bucket approach pose");
 
  
         // Stage 2 – Initial cut
  
-        // We drop slightly deeper and begin cutting forward with the vibrator on.
-        //    lift:  -3.0 is deeper than -2.5 => bucket penetrates further.
+        // We drop slightly deeper and, 
+        //    begin cutting forward with the vibrator on.
+        //    lift:  -3.0 is deeper than -2.5 
         //    tilt:  -3.0 + buffer keeps bucket slightly nose down to cut in.
         //    drive_speed: 1500.
         //
-        MoveBucket(-3.0f, -3.0f + buffer, true, 1500.0f);
+        MoveBucket(-3.0f, -3.0f + buffer, true, 1500.0f); 
+        // MoveBucket (float lift_setpoint, float tilt_setpoint, bool activate_vibrator, float drive_speed)
 
         auto dig_timer1 = std::chrono::high_resolution_clock::now();
         while (std::chrono::duration_cast<std::chrono::seconds>(
@@ -144,7 +148,7 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
             // Slightly deeper + slight nose-up to help collect material:
             //    lift: -3.6 (deeper)
             //    tilt: -3.5 + buffer => (tilt - lift) ≈ +0.1 in raw units
-            //     -> small nose-up angle to keep regolith in the bucket.
+            //     -> small nose up angle to keep sand in the bucket.
             MoveBucket(-3.6f, -3.5f + buffer, true, 1500.0f);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(5)); //prevents CAN buffer from overflowing
@@ -170,6 +174,7 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
             vibrator.SetDutyCycle(VIBRATOR_DUTY);
 
             MoveBucket(-3.6f, -2.9f + buffer, true, 1200.0f);
+            // Stage 2-3 -> no changes to lift, tilt closer to buffer and slower speed?
 
             std::this_thread::sleep_for(std::chrono::milliseconds(5)); //prevents CAN buffer from overflowing
         }
@@ -193,22 +198,21 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
             rightDrive.SetVelocity(800.0f);
             vibrator.SetDutyCycle(VIBRATOR_DUTY);
 
-            MoveBucket(-3.2f, -2.3f + buffer, true, 800.0f); // speed 800
+            MoveBucket(-3.2f, -2.3f + buffer, true, 800.0f); 
+            // Stage 3-4 lift raised, tilt raised,  speed slower
 
             std::this_thread::sleep_for(std::chrono::milliseconds(5)); //prevents CAN buffer from overflowing
         }
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Stage 4 complete: carry material while exiting trench");
 
  
-        // Reset – stop motion and stow bucket
- 
+        // Stage 5 – stop motio
 
         leftDrive.SetDutyCycle(0.0f);
         rightDrive.SetDutyCycle(0.0f);
         vibrator.SetDutyCycle(0.0f);
 
-        // Reset the bucket to a neutral stowed pose.
-        // For now we assume lift=0, tilt≈buffer is safe and out of the regolith bin.
+        // Reset the bucket to a neutral  pose.
         MoveBucket(0.0f, 0.0f + buffer, false, 0.0f);
 
         // Small extra tilt "bump" to take up backlash if needed.
@@ -220,7 +224,7 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
         }
 
         response->excavation_successful = true;
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Excavation sequence completed successfully");
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Stage 5 complete: Excavation sequence completed successfully");
 
 }
 
