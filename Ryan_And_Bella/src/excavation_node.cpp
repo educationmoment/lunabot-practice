@@ -58,23 +58,23 @@ void MoveBucket (float lift_setpoint, float tilt_setpoint, bool activate_vibrato
 void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Request> request,
     std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Response> response) {
 
-        
-
+        MoveBucket(-3.0,-3.0 + buffer, true, 1500);
+    
         auto dig_timer1 = std::chrono::high_resolution_clock::now();
         while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - digtimer1).count() < 2){
-            leftdrive.SetVelocity(1500.0f);
-            rightdrive.SetVelocity(1500.0f);
+            leftdrive.SetVelocity(800.0f);
+            rightdrive.SetVelocity(800.0f);
             vibrator.SetDutyCycle(VIBRATOR_DUTY);
-            MoveBucket(-3.6, -3.5 + buffer, true, 1500);
+            MoveBucket(-3.9, -3.8 + buffer, true, 800);
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
         auto dig_timer2 = std::chrono::high_resolution_clock::now();
         while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - digtimer2).count() < 2){
-            leftdrive.SetVelocity(1000.0f);
-            rightdrive.SetVelocity(1000.0f);
+            leftdrive.SetVelocity(1500.0f);
+            rightdrive.SetVelocity(1500.0f);
             vibrator.SetDutyCycle(VIBRATOR_DUTY);
-            MoveBucket(0.0, -0.1 + buffer, true, 1000);
+            MoveBucket(-3.9, -3.3 + buffer, true, 1500);
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
@@ -83,7 +83,7 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
             leftdrive.SetVelocity(1000.0f);
             rightdrive.SetVelocity(1000.0f);
             vibrator.SetDutyCycle(VIBRATOR_DUTY);
-            MoveBucket(0.0, -0.1 + buffer, true, 1000);
+            MoveBucket(-3.8, -3.0 + buffer, true, 1000);
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
@@ -92,10 +92,11 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
             leftdrive.SetVelocity(500.0f);
             rightdrive.SetVelocity(500.0f);
             vibrator.SetDutyCycle(VIBRATOR_DUTY);
-            MoveBucket(0.0, -0.1 + buffer, true, 1000);
+            MoveBucket(-3.8, -3.0 + buffer, true, 500);
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
+        MoveBucket(0.0, 0.0 + buffer, false, 0.0f); //Resets bucket
 
 }
 
