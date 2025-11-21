@@ -62,6 +62,7 @@ void MoveBucket (float lift_setpoint, float tilt_setpoint, bool activate_vibrato
         rightLiftReached = (fabs(lift_setpoint - rightLift.GetPosition() ) <=  0.0f);
         tiltReached = (fabs(tilt_setpoint - tilt.GetPosition() ) <=  0.0f);
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
 }
 
 void updateTiltPosition(const interfaces_pkg::msg::MotorHealth::SharedPtr health_msg){
@@ -70,7 +71,51 @@ void updateTiltPosition(const interfaces_pkg::msg::MotorHealth::SharedPtr health
 
 void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Request> request, std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Response> response)
 {
+    if (!request->start_excavation)
+    {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Received request but start_excavation is false");
+        response->excavation_successful = false;
+        return;
+    }
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Excavation Sequence successfully completed, new buffer at %f", buffer);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Starting excavation process");
+
+    MoveBucket(-2.5, -2.6 + buffer, false, 0.0f);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Tilt bucket downward to touch ground");
+
+    MoveBucket(-3.6,-3.5 + buffer, true, 1500);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Getting bucket to correct depth");
     
+    auto dig_timer1 = std::chrono::high_resolution_clock::now();
+    while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - dig_timer1).count() < 2)
+    {
+        MoveBucket(-3.8 ,-3.0 + buffer, true, 1000.0f);
+    }
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Slightly Flatten bucket while moving forward");
+
+    auto dig_timer2 = std::chrono::high_resolution_clock::now();
+    while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - dig_timer2).count() < 2)
+    {
+        MoveBucket(-3.8,-2.5 + buffer, true, 1000.0f);
+    }
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Completely Flatten bucket while moving forward");
+
+    auto dig_timer3 = std::chrono::high_resolution_clock::now();
+    while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - dig_timer3).count() < 2)
+    {
+        MoveBucket(-3.8,-2.5 + buffer, true, 500.0f);
+    }
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Completely Flatten bucket while moving forward slower");
+
+    leftDrive.SetDutyCycle(0.0f);
+    rightDrive.SetDutyCycle(0.0f);
+    vibrator.SetDutyCycle(0.0f);
+
+    MoveBucket(0.0, 0.0 + buffer, false, 0.0f);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Reset Bucket");
+
+    response->excavation_successful = true;
 }
 
 int main(int argc, char **argv) {
@@ -81,8 +126,7 @@ int main(int argc, char **argv) {
     rclcpp::Service<interfaces_pkg::srv::ExcavationRequest>::SharedPtr service =
     node->create_service<interfaces_pkg::srv::ExcavationRequest>("excavation_service", &Excavate);
 
-    health_subscriber_ = node->create_subscription<interfaces_pkg::msg::MotorHealth>(
-    "/health_topic", 10, updateTiltPosition);
+    health_subscriber_ = node->create_subscription<interfaces_pkg::msg::MotorHealth>("/health_topic", 10, updateTiltPosition);
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Excavation Initalized");
 
