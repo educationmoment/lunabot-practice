@@ -84,27 +84,27 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
     MoveBucket(-2.5, -2.6 + buffer, false, 0.0f);
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Tilt bucket downward to touch ground");
 
-    MoveBucket(-3.6,-3.5 + buffer, true, 1500);
+    MoveBucket(-3.5,-4.0 + buffer, true, 1000);
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Getting bucket to correct depth");
     
     auto dig_timer1 = std::chrono::high_resolution_clock::now();
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - dig_timer1).count() < 2)
     {
-        MoveBucket(-3.8 ,-3.0 + buffer, true, 1000.0f);
+        MoveBucket(-4.0,-3.0 + buffer, true, 1000.0f);
     }
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Slightly Flatten bucket while moving forward");
 
     auto dig_timer2 = std::chrono::high_resolution_clock::now();
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - dig_timer2).count() < 2)
     {
-        MoveBucket(-3.8,-2.5 + buffer, true, 1000.0f);
+        MoveBucket(-4.0,-2.5 + buffer, true, 1000.0f);
     }
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Completely Flatten bucket while moving forward");
 
     auto dig_timer3 = std::chrono::high_resolution_clock::now();
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - dig_timer3).count() < 2)
     {
-        MoveBucket(-3.8,-2.5 + buffer, true, 500.0f);
+        MoveBucket(-4.0,-2.5 + buffer, true, 500.0f);
     }
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Completely Flatten bucket while moving forward slower");
 
