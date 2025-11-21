@@ -199,14 +199,14 @@ void Excavate(const std::shared_ptr<interfaces_pkg::srv::ExcavationRequest::Requ
             vibrator.SetDutyCycle(VIBRATOR_DUTY);
 
             MoveBucket(-3.2f, -2.3f + buffer, true, 800.0f); 
-            // Stage 3-4 lift raised, tilt raised,  speed slower
+            // Stage 3-4 lift raised, tilt raised,  speed slower.
 
             std::this_thread::sleep_for(std::chrono::milliseconds(5)); //prevents CAN buffer from overflowing
         }
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Stage 4 complete: carry material while exiting trench");
 
  
-        // Stage 5 – stop motio
+        // Stage 5 – stop motion
 
         leftDrive.SetDutyCycle(0.0f);
         rightDrive.SetDutyCycle(0.0f);
